@@ -13,6 +13,10 @@ Arquitectura por capas (hexagonal): el dominio es Java puro y no depende de nada
 | `infrastructure` | Vacía |
 | `ui` | Vacía (solo queda la plantilla `HelloApplication` de IntelliJ) |
 
+## Modelo de datos
+
+Tablas, relaciones y reglas de la base: [modelo-de-datos.md](modelo-de-datos.md). El DBML de origen está en [modelo-de-datos.dbml](modelo-de-datos.dbml).
+
 ## Estructura
 
 Paquete base: `dev.gimnasio.sistemagimnasio`. Lo marcado como *(planeado)* aún no existe en disco.
