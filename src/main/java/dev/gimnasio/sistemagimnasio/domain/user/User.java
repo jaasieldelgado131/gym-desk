@@ -18,11 +18,15 @@ public record User(Long id, String name, String username, Role role, boolean act
         username = username.strip();
     }
 
-    /** Un usuario desactivado no puede entrar ni actuar. */
-    public void requirePermission(Permission permission) {
+    /** RF-01.4: un usuario desactivado no puede entrar ni actuar. */
+    public void requireActive() {
         if (!active) {
             throw new DomainException("El usuario está desactivado.");
         }
+    }
+
+    public void requirePermission(Permission permission) {
+        requireActive();
         if (!role.can(permission)) {
             throw new DomainException("El rol (" + role + ") no permite esta acción.");
         }
