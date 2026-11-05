@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-/** Tabla de roles de la especificación ("Quiénes lo usan"), fila por fila. */
 class RoleTest {
 
     @Test
@@ -31,11 +30,11 @@ class RoleTest {
     @Test
     void recepcion_atiendeElMostrador_peroNoAdministraCatalogosUsuariosNiConfiguracion() {
         Set<Permission> expected = EnumSet.of(
-                VIEW_DAILY_SUMMARY,              // Resumen del día: completo
-                CHARGE_MEMBERSHIP,               // Cobro de membresías: completo
-                SELL,                            // Venta de mostrador: completo
-                VIEW_MEMBERS, EDIT_MEMBERS,      // Socios: alta y edición
-                VIEW_INVENTORY, REGISTER_STOCK_MOVEMENT); // Inventario: registrar movimientos
+                VIEW_DAILY_SUMMARY,
+                CHARGE_MEMBERSHIP,
+                SELL,
+                VIEW_MEMBERS, EDIT_MEMBERS,
+                VIEW_INVENTORY, REGISTER_STOCK_MOVEMENT);
         assertEquals(expected, Role.RECEPCION.permissions());
     }
 

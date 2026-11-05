@@ -3,7 +3,6 @@ package dev.gimnasio.sistemagimnasio.domain.inventory;
 import dev.gimnasio.sistemagimnasio.domain.shared.DomainException;
 import dev.gimnasio.sistemagimnasio.domain.shared.Money;
 
-/** Producto de venta. {@code stock} es la existencia actual; empieza con la existencia inicial. */
 public record Product(
         Long id,
         String code,
@@ -31,12 +30,10 @@ public record Product(
         name = name.strip();
     }
 
-    /** Bajo: existencia igual o menor al mínimo. */
     public boolean isLow() {
         return stock <= minStock;
     }
 
-    /** Cómo quedaría la existencia tras un movimiento, para mostrarlo antes de confirmar. */
     public int stockAfter(MovementType type, int quantity) {
         if (quantity < 0) {
             throw new DomainException("La cantidad no puede ser negativa.");

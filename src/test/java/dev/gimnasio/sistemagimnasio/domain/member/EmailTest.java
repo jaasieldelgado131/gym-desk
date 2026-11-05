@@ -11,7 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class EmailTest {
 
-    /** RF-05.5: el correo no se repite entre socios; "Ana@GYM.mx" y "ana@gym.mx" son el mismo correo. */
     @Test
     void correosQueSoloDifierenEnMayusculas_sonElMismo() {
         assertEquals(new Email("ana@gym.mx"), new Email("Ana@GYM.mx"));

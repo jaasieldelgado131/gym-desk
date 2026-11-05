@@ -4,7 +4,6 @@ import dev.gimnasio.sistemagimnasio.domain.shared.DomainException;
 
 import java.time.LocalDate;
 
-/** Periodo de membresía de un socio: plan, inicio y vencimiento (inicio + duración del plan). */
 public record Membership(Long id, long memberId, long planId, LocalDate start, LocalDate end) {
     public Membership {
         if (start == null || end == null || !end.isAfter(start)) {

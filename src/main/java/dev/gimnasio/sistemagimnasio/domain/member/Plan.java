@@ -3,7 +3,6 @@ package dev.gimnasio.sistemagimnasio.domain.member;
 import dev.gimnasio.sistemagimnasio.domain.shared.DomainException;
 import dev.gimnasio.sistemagimnasio.domain.shared.Money;
 
-/** Plan de membresía. Los descuentos son planes propios (p. ej. Estudiante). Un plan inactivo se conserva en el historial. */
 public record Plan(Long id, String name, int durationDays, Money price, boolean active) {
     public Plan {
         if (name == null || name.isBlank()) {

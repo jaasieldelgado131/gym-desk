@@ -16,12 +16,11 @@ class GymSettingsTest {
     }
 
     @Test
-    void losValoresIniciales_sonLosDeLaEspecificacion() {
+    void valoresIniciales_sieteDiasDeAvisoYTreintaDePlazo() {
         assertEquals(7, GymSettings.DEFAULT_WARNING_DAYS);
         assertEquals(30, GymSettings.DEFAULT_GRACE_DAYS);
     }
 
-    /** RF-06.2: el plazo de baja automática es obligatorio. */
     @Test
     void plazoDeBaja_debeSerDeAlMenosUnDia() {
         assertEquals(1, settings("Gym", MXN, 7, 1, "GYM-").graceDays());

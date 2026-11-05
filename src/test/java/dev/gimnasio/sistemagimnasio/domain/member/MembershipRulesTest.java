@@ -42,7 +42,6 @@ class MembershipRulesTest {
         return MembershipRules.statusOf(MembershipRules.latest(history), day, WARNING, GRACE);
     }
 
-    // ---------- Estado ----------
 
     @Test
     void sinMembresias_estaSinMembresia() {
@@ -90,7 +89,6 @@ class MembershipRulesTest {
         assertEquals(VIGENTE, statusOn(List.of(adelantada, actual, vieja), TODAY));
     }
 
-    // ---------- Inicio de la renovación ----------
 
     @Test
     void renovarAntesDeVencer_sumaElPeriodoAlFinalDelActual() {
@@ -123,7 +121,6 @@ class MembershipRulesTest {
         assertEquals(TODAY, MembershipRules.renewalStart(null, TODAY));
     }
 
-    /** Si la actual aún no vence, se renueva desde su vencimiento aunque haya otras membresías en el historial. */
     @Test
     void renovarConUnaMembresiaYaAdelantada_seSumaAlFinalDeLaMasLejana() {
         Membership actual = between(TODAY.minusDays(20), TODAY.plusDays(10));
@@ -132,7 +129,6 @@ class MembershipRulesTest {
                 MembershipRules.renewalStart(MembershipRules.latest(List.of(actual, adelantada)), TODAY));
     }
 
-    /** Regla de vigencia: pagar por adelantado no hace perder días, sin importar cuándo ni con qué plan se renueve. */
     @Test
     void renovarPorAdelantadoMuchasVeces_noPierdeNingunDia() {
         Random random = new Random(20261104L);
@@ -152,7 +148,6 @@ class MembershipRulesTest {
         assertEquals(firstStart.plusDays(paidDays), current.end());
     }
 
-    /** Pagar ya vencido no regala los días sin cubrir: el periodo completo cuenta desde el pago. */
     @Test
     void pagarVencido_cubreElPlanCompletoDesdeElDiaDelPago() {
         Membership vencida = endingOn(TODAY.minusDays(12));
@@ -161,7 +156,6 @@ class MembershipRulesTest {
         assertEquals(TODAY.plusDays(30), nueva.end());
     }
 
-    /** RF-03.7: al confirmar el cobro el socio queda Vigente. */
     @Test
     void cobrarUnMensualASocioVencido_loDejaVigente() {
         Membership vencida = endingOn(TODAY.minusDays(GRACE - 1));
@@ -169,7 +163,6 @@ class MembershipRulesTest {
         assertEquals(VIGENTE, statusOn(List.of(vencida, nueva), TODAY));
     }
 
-    // ---------- Ciclo de vida completo ----------
 
     @Test
     void cicloCompleto_altaCobroAvisoVencimientoBajaYReactivacion() {
@@ -189,18 +182,16 @@ class MembershipRulesTest {
         assertEquals(VENCIDA, statusOn(history, end.plusDays(GRACE - 1)));
         assertEquals(BAJA, statusOn(history, end.plusDays(GRACE)));
 
-        // RF-06.1: la fecha de baja es el último vencimiento, no el día en que se cumplió el plazo.
+        // La fecha de baja es el último vencimiento, no el día en que se cumplió el plazo.
         LocalDate payDay = end.plusDays(45);
         assertEquals(List.of(new Deactivation(end, null)), MembershipRules.deactivations(history, payDay, GRACE));
 
-        // RF-06.4: la reactivación es cobrar una nueva membresía.
         history.add(Membership.begin(1, MENSUAL,
                 MembershipRules.renewalStart(MembershipRules.latest(history), payDay)));
         assertEquals(VIGENTE, statusOn(history, payDay));
         assertEquals(List.of(new Deactivation(end, payDay)), MembershipRules.deactivations(history, payDay, GRACE));
     }
 
-    // ---------- Bajas e historial ----------
 
     @Test
     void renovacionContigua_nuncaEsBaja_niConElPlazoMinimo() {
@@ -257,7 +248,6 @@ class MembershipRulesTest {
         }
     }
 
-    /** Parámetros configurables: cambiar el plazo de baja automática recalcula las bajas anteriores. */
     @Test
     void cambiarElPlazo_recalculaLasBajasAnteriores() {
         List<Membership> history = List.of(
@@ -270,7 +260,6 @@ class MembershipRulesTest {
         assertEquals(List.of(), MembershipRules.deactivations(history, today, 60));
     }
 
-    /** Invariante: el estado Baja y el historial de bajas se derivan de lo mismo y nunca se contradicen. */
     @Test
     void historialesAleatorios_elEstadoBajaCoincideConUnaBajaAbierta() {
         Random random = new Random(42);

@@ -75,7 +75,6 @@ class ProductTest {
         assertThrows(DomainException.class, () -> agotado.apply(SALIDA, 1));
     }
 
-    /** RF-09.3: la vista previa debe rechazar lo mismo que rechazará el registro del movimiento. */
     @ParameterizedTest
     @EnumSource(value = MovementType.class, names = {"ENTRADA", "SALIDA"})
     void laVistaPrevia_rechazaLaCantidadCeroIgualQueElRegistro(MovementType type) {

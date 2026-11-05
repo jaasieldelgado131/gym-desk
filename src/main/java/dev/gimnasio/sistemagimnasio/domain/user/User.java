@@ -2,7 +2,7 @@ package dev.gimnasio.sistemagimnasio.domain.user;
 
 import dev.gimnasio.sistemagimnasio.domain.shared.DomainException;
 
-/** Personal del gimnasio. La contraseña no forma parte del dominio: nunca se muestra. */
+/** La contraseña no forma parte del dominio. */
 public record User(Long id, String name, String username, Role role, boolean active) {
     public User {
         if (name == null || name.isBlank()) {
@@ -18,7 +18,6 @@ public record User(Long id, String name, String username, Role role, boolean act
         username = username.strip();
     }
 
-    /** RF-01.4: un usuario desactivado no puede entrar ni actuar. */
     public void requireActive() {
         if (!active) {
             throw new DomainException("El usuario está desactivado.");

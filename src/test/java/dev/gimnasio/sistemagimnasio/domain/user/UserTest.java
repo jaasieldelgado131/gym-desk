@@ -11,7 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class UserTest {
 
-    /** RF-01.4: mientras un usuario esté desactivado no puede entrar, aunque sea Administrador. */
     @ParameterizedTest
     @EnumSource(Role.class)
     void usuarioDesactivado_noPuedeHacerNada(Role role) {
@@ -21,7 +20,6 @@ class UserTest {
         }
     }
 
-    /** RF-01.6: lo que el rol no permite se impide; lo que permite, no. */
     @ParameterizedTest
     @EnumSource(Role.class)
     void usuarioActivo_soloPuedeLoQueSuRolPermite(Role role) {

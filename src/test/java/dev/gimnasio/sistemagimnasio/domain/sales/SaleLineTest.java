@@ -21,7 +21,6 @@ class SaleLineTest {
         assertEquals(Money.of("55.50"), line.subtotal());
     }
 
-    /** RF-04.7: un producto inactivo no se ofrece en la venta. */
     @Test
     void productoInactivo_noSePuedeVender() {
         assertThrows(DomainException.class, () -> SaleLine.of(product(false), 1));
@@ -33,7 +32,7 @@ class SaleLineTest {
         assertThrows(DomainException.class, () -> SaleLine.of(product(true), -2));
     }
 
-    /** Sin precio no hay total (RF-04.6); el error debe aparecer al armar el renglón, no al cobrar. */
+    /** El error debe aparecer al armar el renglón, no al calcular el total. */
     @Test
     void renglonSinPrecio_seRechazaAlCrearlo() {
         assertThrows(DomainException.class, () -> new SaleLine(9L, "Agua 1 L", 1, null));

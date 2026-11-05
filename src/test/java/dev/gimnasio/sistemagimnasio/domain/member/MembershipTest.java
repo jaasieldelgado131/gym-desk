@@ -21,7 +21,7 @@ class MembershipTest {
         assertEquals(1, m.planId());
     }
 
-    /** La spec define la duración en días: un anual de 365 días que cruza un 29 de febrero vence un día antes del aniversario. */
+    /** La duración es en días: un anual que cruza un 29 de febrero vence un día antes del aniversario. */
     @Test
     void unPlanAnualQueCruzaUnAnioBisiesto_dura365DiasNoUnAnioCalendario() {
         assertEquals(LocalDate.of(2028, 2, 29), Membership.begin(1, ANUAL, LocalDate.of(2027, 3, 1)).end());

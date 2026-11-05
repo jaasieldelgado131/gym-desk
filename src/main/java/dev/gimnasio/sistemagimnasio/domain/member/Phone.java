@@ -2,7 +2,6 @@ package dev.gimnasio.sistemagimnasio.domain.member;
 
 import dev.gimnasio.sistemagimnasio.domain.shared.DomainException;
 
-/** Teléfono de exactamente 10 dígitos. */
 public record Phone(String value) {
     public Phone {
         if (value == null || !value.matches("\\d{10}")) {

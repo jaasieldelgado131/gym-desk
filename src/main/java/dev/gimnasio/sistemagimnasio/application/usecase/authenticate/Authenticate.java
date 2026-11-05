@@ -7,7 +7,6 @@ import dev.gimnasio.sistemagimnasio.domain.user.User;
 
 import java.util.Objects;
 
-/** RF-01: acceso con usuario y contraseña. Devuelve el usuario con el que se abre la sesión. */
 public final class Authenticate {
     static final String MISSING_DATA = "Escribe tu usuario y tu contraseña.";
     static final String INVALID_CREDENTIALS = "El usuario o la contraseña son incorrectos.";

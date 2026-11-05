@@ -3,7 +3,7 @@ package dev.gimnasio.sistemagimnasio.domain.shared;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-/** Importe no negativo con dos decimales. La moneda la define GymSettings. */
+/** Sin moneda: la define GymSettings. */
 public record Money(BigDecimal amount) implements Comparable<Money> {
     public static final Money ZERO = new Money(BigDecimal.ZERO);
 

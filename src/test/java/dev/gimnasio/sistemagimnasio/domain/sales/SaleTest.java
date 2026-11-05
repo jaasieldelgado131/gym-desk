@@ -23,7 +23,6 @@ class SaleTest {
         assertEquals(Money.of("72.00"), new Sale(null, FOLIO, NOW, List.of(AGUA, BARRA), 1, 1).total());
     }
 
-    /** RF-04.2: se puede vaciar el ticket, pero no cobrar uno vacío. */
     @Test
     void ventaSinProductos_seRechaza() {
         assertThrows(DomainException.class, () -> new Sale(null, FOLIO, NOW, List.of(), 1, 1));
@@ -41,7 +40,6 @@ class SaleTest {
         assertThrows(UnsupportedOperationException.class, () -> sale.lines().add(BARRA));
     }
 
-    /** Reglas del negocio: cada venta recibe un folio único y se registra con su fecha. */
     @Test
     void ventaSinFolio_seRechaza() {
         assertThrows(DomainException.class, () -> new Sale(null, null, NOW, List.of(AGUA), 1, 1));

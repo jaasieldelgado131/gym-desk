@@ -4,10 +4,7 @@ import dev.gimnasio.sistemagimnasio.domain.shared.DomainException;
 
 import java.util.Currency;
 
-/**
- * Parámetros propios del gimnasio, definidos por el Administrador.
- * La moneda no puede cambiarse si ya existen cobros o ventas (regla que aplica la capa de aplicación).
- */
+/** Que la moneda no cambie si ya hay cobros o ventas lo valida la capa de aplicación. */
 public record GymSettings(
         String gymName,
         String address,

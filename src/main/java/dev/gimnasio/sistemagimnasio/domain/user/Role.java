@@ -5,7 +5,6 @@ import java.util.Set;
 
 import static dev.gimnasio.sistemagimnasio.domain.user.Permission.*;
 
-/** Roles del personal; los permisos siguen la tabla de la especificación. */
 public enum Role {
     ADMINISTRADOR(EnumSet.allOf(Permission.class)),
     RECEPCION(EnumSet.of(VIEW_DAILY_SUMMARY, CHARGE_MEMBERSHIP, SELL, VIEW_MEMBERS, EDIT_MEMBERS,

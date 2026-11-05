@@ -4,7 +4,7 @@ import dev.gimnasio.sistemagimnasio.domain.inventory.Product;
 import dev.gimnasio.sistemagimnasio.domain.shared.DomainException;
 import dev.gimnasio.sistemagimnasio.domain.shared.Money;
 
-/** Renglón del ticket; conserva el precio del momento de la venta. */
+/** Guarda el precio del momento de la venta, no el actual del producto. */
 public record SaleLine(long productId, String productName, int quantity, Money unitPrice) {
     public SaleLine {
         if (quantity < 1) {

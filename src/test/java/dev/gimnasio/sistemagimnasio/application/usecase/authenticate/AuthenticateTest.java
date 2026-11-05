@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class AuthenticateTest {
 
-    /** Hash de prueba reversible a propósito: solo sirve para comprobar que nunca se compara la contraseña en claro. */
+    /** Hash falso pero distinto de la contraseña, para detectar comparaciones en claro. */
     private static final class FakeHasher implements PasswordHasher {
         @Override
         public String hash(String rawPassword) {
@@ -64,9 +64,7 @@ class AuthenticateTest {
                 () -> authenticate.execute(new AuthenticateCommand(username, password))).getMessage();
     }
 
-    // ---------- Acceso correcto ----------
 
-    /** RF-01.1: el acceso devuelve al usuario con su rol, que decide a qué áreas entra. */
     @Test
     void usuarioYContrasenaCorrectos_devuelveAlUsuarioConSuRol() {
         User caja = register("lucia", "Mostrador#2026", Role.CAJA, true);
@@ -84,7 +82,6 @@ class AuthenticateTest {
         assertSame(admin, authenticate.execute(new AuthenticateCommand("  admin \t", "Gym-Admin-1")));
     }
 
-    // ---------- Datos incorrectos (RF-01.2) ----------
 
     @Test
     void contrasenaIncorrecta_seRechazaConMensajeClaro() {
@@ -92,14 +89,13 @@ class AuthenticateTest {
         assertEquals(Authenticate.INVALID_CREDENTIALS, rejection("lucia", "mostrador#2026"));
     }
 
-    /** Un extraño no debe poder averiguar qué usuarios existen probando nombres. */
+    /** Así no se puede averiguar qué usuarios existen probando nombres. */
     @Test
     void usuarioInexistente_yContrasenaIncorrecta_danExactamenteElMismoMensaje() {
         register("lucia", "Mostrador#2026", Role.CAJA, true);
         assertEquals(rejection("lucia", "otra"), rejection("nadie", "otra"));
     }
 
-    /** Las contraseñas pueden contener espacios: no se recortan como el usuario. */
     @ParameterizedTest
     @CsvSource({"' Mostrador#2026'", "'Mostrador#2026 '"})
     void contrasenaConEspaciosDeMas_noEsLaMisma(String password) {
@@ -113,7 +109,6 @@ class AuthenticateTest {
         assertSame(user, authenticate.execute(new AuthenticateCommand("pedro", "mi clave segura")));
     }
 
-    /** Ni siquiera alguien que conoce el hash guardado puede entrar escribiéndolo como contraseña. */
     @Test
     void escribirElHashGuardado_noDaAcceso() {
         register("lucia", "Mostrador#2026", Role.CAJA, true);
@@ -129,7 +124,6 @@ class AuthenticateTest {
         assertEquals(0, users.lookups);
     }
 
-    // ---------- Usuarios desactivados (RF-01.4) ----------
 
     @Test
     void usuarioDesactivadoConContrasenaCorrecta_noEntra_ySeLeDiceElMotivo() {
@@ -139,14 +133,13 @@ class AuthenticateTest {
         assertEquals("El usuario está desactivado.", e.getMessage());
     }
 
-    /** Sin la contraseña correcta no se revela que la cuenta existe y está desactivada. */
+    /** Sin la contraseña correcta no se revela que la cuenta existe. */
     @Test
     void usuarioDesactivadoConContrasenaIncorrecta_recibeElMensajeGenerico() {
         register("pedro", "Recepcion#2026", Role.RECEPCION, false);
         assertEquals(Authenticate.INVALID_CREDENTIALS, rejection("pedro", "otra"));
     }
 
-    // ---------- Contraseña nunca visible (RF-01.5) ----------
 
     @Test
     void laContrasenaNoApareceAlImprimirElComandoNiLasCredenciales() {
@@ -164,9 +157,8 @@ class AuthenticateTest {
         assertFalse(rejection("lucia", "MiClaveFiltrada").contains("MiClaveFiltrada"));
     }
 
-    // ---------- Fallos de dependencias ----------
 
-    /** Un fallo técnico (hash corrupto, base caída) no debe disfrazarse de "contraseña incorrecta". */
+    /** Un fallo técnico no debe disfrazarse de contraseña incorrecta. */
     @Test
     void siFallaLaVerificacionDelHash_elErrorSePropagaSinConvertirseEnRechazo() {
         IllegalStateException failure = new IllegalStateException("hash ilegible");

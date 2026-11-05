@@ -7,7 +7,6 @@ import dev.gimnasio.sistemagimnasio.domain.shared.Money;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/** Venta de mostrador. Al cobrarla descuenta del inventario lo vendido. */
 public record Sale(
         Long id,
         Folio folio,

@@ -4,10 +4,7 @@ import dev.gimnasio.sistemagimnasio.domain.shared.DomainException;
 
 import java.time.LocalDate;
 
-/**
- * Socio del gimnasio. {@code email} es opcional (puede ser null) y no se repite entre socios.
- * Su estado no se guarda: se calcula con {@link MembershipRules}.
- */
+/** {@code email} puede ser null. El estado no se guarda: se calcula con {@link MembershipRules}. */
 public record Member(Long id, String fullName, Phone phone, Email email, LocalDate joinDate) {
     public Member {
         if (fullName == null || fullName.isBlank()) {

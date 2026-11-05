@@ -19,12 +19,12 @@ class PhoneTest {
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {
-            "551234567",      // 9 dígitos
-            "55123456789",    // 11 dígitos
-            "+525512345678",  // con lada internacional
+            "551234567",
+            "55123456789",
+            "+525512345678",
             "551234567a",
-            "５５１２３４５６７８", // dígitos de ancho completo: rompen la búsqueda por teléfono
-            "٥٥١٢٣٤٥٦٧٨"      // dígitos arábigo-índicos
+            "５５１２３４５６７８", // dígitos no ASCII: romperían la búsqueda por teléfono
+            "٥٥١٢٣٤٥٦٧٨"
     })
     void loQueNoSonDiezDigitosAscii_seRechaza(String value) {
         assertThrows(DomainException.class, () -> new Phone(value));

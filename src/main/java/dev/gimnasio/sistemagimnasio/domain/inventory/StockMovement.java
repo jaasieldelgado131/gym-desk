@@ -4,7 +4,6 @@ import dev.gimnasio.sistemagimnasio.domain.shared.DomainException;
 
 import java.time.LocalDateTime;
 
-/** Movimiento de inventario: qué se movió, cuánto, por qué y quién lo registró. */
 public record StockMovement(
         Long id,
         LocalDateTime dateTime,

@@ -8,7 +8,7 @@ import dev.gimnasio.sistemagimnasio.domain.shared.Money;
 
 import java.time.LocalDateTime;
 
-/** Cobro de membresía. Siempre se cobra el precio del plan, sin edición ni descuentos. */
+/** El monto es siempre el precio del plan; no se edita. */
 public record MembershipPayment(
         Long id,
         Folio folio,

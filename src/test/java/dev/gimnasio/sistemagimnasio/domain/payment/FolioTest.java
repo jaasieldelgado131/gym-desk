@@ -45,7 +45,7 @@ class FolioTest {
         assertThrows(DomainException.class, () -> new Folio(value));
     }
 
-    /** La spec exige un prefijo configurado (GymSettings no admite uno vacío); un folio sin prefijo no debe generarse. */
+    /** GymSettings no admite un prefijo vacío; Folio tampoco debería. */
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {"   "})

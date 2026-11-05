@@ -23,7 +23,6 @@ class PlanTest {
         assertThrows(DomainException.class, () -> new Plan(null, "Mensual", 30, null, true));
     }
 
-    /** RF-07.3: desactivar un plan lo conserva en el historial tal como estaba. */
     @Test
     void desactivar_soloCambiaElEstadoYNoTocaElOriginal() {
         Plan mensual = new Plan(5L, "Mensual", 30, Money.of("450"), true);

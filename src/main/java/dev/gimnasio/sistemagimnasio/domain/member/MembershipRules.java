@@ -6,20 +6,17 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-/** Reglas de vigencia, estado y bajas automáticas. Todo se deriva de las membresías; nada del estado se guarda. */
+/** Todo se deriva de las membresías; ni el estado ni las bajas se guardan. */
 public final class MembershipRules {
     private MembershipRules() {
     }
 
-    /** La membresía con el vencimiento más lejano, o null si el socio no tiene ninguna. */
+    /** null si no hay membresías. */
     public static Membership latest(List<Membership> memberships) {
         return memberships.stream().max(Comparator.comparing(Membership::end)).orElse(null);
     }
 
-    /**
-     * @param warningDays días de aviso: con esos días o menos para vencer, el socio está Por vencer
-     * @param graceDays   plazo de baja automática, contado desde el vencimiento
-     */
+    /** @param graceDays días después del vencimiento para pasar a baja */
     public static MemberStatus statusOf(Membership latest, LocalDate today, int warningDays, int graceDays) {
         if (latest == null) {
             return MemberStatus.SIN_MEMBRESIA;
@@ -31,10 +28,7 @@ public final class MembershipRules {
         return -daysLeft >= graceDays ? MemberStatus.BAJA : MemberStatus.VENCIDA;
     }
 
-    /**
-     * Inicio de la nueva membresía (RF-03.7, RF-03.8): si la actual aún no vence, el periodo nuevo se suma al final
-     * de la actual; si ya venció (también si está de baja) o no tiene membresía, empieza el día del pago.
-     */
+    /** Si la actual no ha vencido, la nueva empieza cuando termina; si ya venció o no hay, el día del pago. */
     public static LocalDate renewalStart(Membership latest, LocalDate paymentDay) {
         if (latest != null && !latest.end().isBefore(paymentDay)) {
             return latest.end();
@@ -42,7 +36,7 @@ public final class MembershipRules {
         return paymentDay;
     }
 
-    /** Bajas del socio (y sus reactivaciones), de la más antigua a la más reciente. */
+    /** De la más antigua a la más reciente. */
     public static List<Deactivation> deactivations(List<Membership> memberships, LocalDate today, int graceDays) {
         List<Membership> sorted = memberships.stream().sorted(Comparator.comparing(Membership::start)).toList();
         List<Deactivation> result = new ArrayList<>();
