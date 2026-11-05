@@ -9,7 +9,7 @@ Arquitectura por capas (hexagonal): el dominio es Java puro y no depende de nada
 | Capa | Estado |
 |---|---|
 | `domain` | Entidades, value objects y reglas creados a partir de la especificación |
-| `application` | Vacía |
+| `application` | Caso de uso `Authenticate` con sus puertos `UserRepository` y `PasswordHasher` |
 | `infrastructure` | Vacía |
 | `ui` | Vacía (solo queda la plantilla `HelloApplication` de IntelliJ) |
 
@@ -35,16 +35,17 @@ sistema-gimnasio/
     │   │   ├── settings/                GymSettings
     │   │   └── user/                    User, Role, Permission
     │   │
-    │   ├── application/                 lo que el sistema hace (vacía)
+    │   ├── application/                 lo que el sistema hace
     │   │   ├── port/out/                (planeado) interfaces que la aplicación necesita del exterior
     │   │   │   ├── MemberRepository, MembershipPaymentRepository, SaleRepository
     │   │   │   ├── ProductRepository, UserRepository, SettingsRepository
     │   │   │   └── FolioGenerator, AppClock, PasswordHasher, ReceiptPrinter
-    │   │   └── usecase/                 (planeado)
-    │   │       ├── ChargeMembership, SellAtCounter
-    │   │       ├── DeactivateMember, ReactivateMember, VoidMembershipPayment
-    │   │       ├── RegisterInventoryMovement, DaySummary, Authenticate
-    │   │       └── PlanCatalog, ProductCatalog, UserAdmin   (CRUD agrupado por área)
+    │   │   └── usecase/                 una carpeta por caso de uso: el caso, su command, su result y sus excepciones
+    │   │       ├── authenticate/        Authenticate, AuthenticateCommand, AuthenticationException
+    │   │       ├── (planeado) chargemembership/, sellatcounter/
+    │   │       ├── (planeado) deactivatemember/, reactivatemember/, voidmembershippayment/
+    │   │       ├── (planeado) registerinventorymovement/, daysummary/
+    │   │       └── (planeado) plancatalog/, productcatalog/, useradmin/   (CRUD agrupado por área)
     │   │
     │   ├── infrastructure/              implementa los puertos (vacía)
     │   │   ├── persistence/             (planeado) repositorios con JDBI + SQL, migraciones Flyway
@@ -65,7 +66,7 @@ sistema-gimnasio/
     │
     └── test/java/dev/gimnasio/sistemagimnasio/
         ├── domain/member/               MembershipRulesTest
-        ├── application/usecase/         pruebas con repositorios falsos en memoria
+        ├── application/usecase/         pruebas con repositorios falsos en memoria, en la misma carpeta que su caso de uso
         └── infrastructure/persistence/  pruebas contra PostgreSQL (Testcontainers)
 ```
 
