@@ -1,0 +1,25 @@
+package dev.gimnasio.sistemagimnasio.domain.sales;
+
+import dev.gimnasio.sistemagimnasio.domain.inventory.Product;
+import dev.gimnasio.sistemagimnasio.domain.shared.DomainException;
+import dev.gimnasio.sistemagimnasio.domain.shared.Money;
+
+/** Renglón del ticket; conserva el precio del momento de la venta. */
+public record SaleLine(long productId, String productName, int quantity, Money unitPrice) {
+    public SaleLine {
+        if (quantity < 1) {
+            throw new DomainException("La cantidad debe ser de al menos 1.");
+        }
+    }
+
+    public static SaleLine of(Product product, int quantity) {
+        if (!product.active()) {
+            throw new DomainException("El producto \"" + product.name() + "\" está inactivo.");
+        }
+        return new SaleLine(product.id(), product.name(), quantity, product.price());
+    }
+
+    public Money subtotal() {
+        return unitPrice.times(quantity);
+    }
+}
