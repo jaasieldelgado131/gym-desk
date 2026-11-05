@@ -10,7 +10,7 @@ Arquitectura por capas (hexagonal): el dominio es Java puro y no depende de nada
 |---|---|
 | `domain` | Entidades, value objects y reglas creados a partir de la especificación |
 | `application` | Caso de uso `Authenticate` con sus puertos `UserRepository` y `PasswordHasher` |
-| `infrastructure` | Vacía |
+| `infrastructure` | Conexión a PostgreSQL, migraciones, `PostgresUserRepository` y `Argon2PasswordHasher` |
 | `ui` | Vacía (solo queda la plantilla `HelloApplication` de IntelliJ) |
 
 ## Modelo de datos
@@ -51,9 +51,9 @@ sistema-gimnasio/
     │   │       ├── (planeado) registerinventorymovement/, daysummary/
     │   │       └── (planeado) plancatalog/, productcatalog/, useradmin/   (CRUD agrupado por área)
     │   │
-    │   ├── infrastructure/              implementa los puertos (vacía)
-    │   │   ├── persistence/             (planeado) repositorios con JDBI + SQL, migraciones Flyway
-    │   │   ├── security/                (planeado) hash de contraseñas (Argon2) y sesión
+    │   ├── infrastructure/              implementa los puertos
+    │   │   ├── persistence/             DatabaseConfig, Database (HikariCP + Flyway), PostgresUserRepository
+    │   │   ├── security/                Argon2PasswordHasher
     │   │   ├── printing/                (planeado) recibos y tickets
     │   │   ├── backup/                  (planeado) pg_dump diario
     │   │   └── time/                    (planeado) reloj del sistema (implementa AppClock)
@@ -64,7 +64,7 @@ sistema-gimnasio/
     │       └── common/                  navegación, diálogos, formatos, atajos     (planeado)
     │
     ├── main/resources/
-    │   ├── db/migration/                (planeado) V1__schema.sql, V2__initial_data.sql
+    │   ├── db/migration/                V1__create_app_user.sql
     │   ├── i18n/messages_es.properties  (planeado)
     │   └── fxml/   css/app.css   logback.xml   (planeado)
     │
@@ -80,9 +80,11 @@ sistema-gimnasio/
 - `application` depende solo de `domain`; define los puertos (`port/out`) que implementa `infrastructure`.
 - `infrastructure` y `ui` dependen de `application` y `domain`, nunca entre sí.
 
-## Tecnologías previstas
+## Tecnologías
 
-Aún **no** están en el `pom.xml`: PostgreSQL, JDBI, Flyway, Argon2, Logback, Testcontainers. Hoy el `pom.xml` incluye JavaFX 21 y JUnit 5.
+En el `pom.xml`: JavaFX 21, PostgreSQL (driver JDBC), HikariCP, JDBI, Flyway, Argon2 (`argon2-jvm`), JUnit 5 y Testcontainers. Falta Logback.
+
+La app corre en el classpath, sin `module-info.java`: Flyway y `argon2-jvm` no son módulos de Java, y `Launcher` arranca JavaFX sin necesitarlos.
 
 ## Desarrollo
 
@@ -97,4 +99,14 @@ Aún **no** están en el `pom.xml`: PostgreSQL, JDBI, Flyway, Argon2, Logback, T
 docker compose up -d
 ```
 
-`docker-compose.yml` levanta solo PostgreSQL 16 (base, usuario `gimnasio`, puerto 5432, volumen persistente `pgdata`). La app se ejecuta en el equipo con `./mvnw javafx:run`. La contraseña por defecto es solo para desarrollo; cámbiala con la variable `DB_PASSWORD`.
+`docker-compose.yml` levanta solo PostgreSQL 16 (base y usuario `gimnasio`, puerto 5432, volumen persistente `pgdata`). La app se ejecuta en el equipo con `./mvnw javafx:run`.
+
+La app lee la conexión de variables de entorno:
+
+| Variable | Por defecto |
+|---|---|
+| `DB_URL` | `jdbc:postgresql://localhost:5432/gimnasio` |
+| `DB_USER` | `gimnasio` |
+| `DB_PASSWORD` | ninguno: es obligatoria y debe coincidir con `POSTGRES_PASSWORD` del compose |
+
+`Database.migrate` aplica con Flyway las migraciones de `db/migration`. Todavía nadie la llama al arrancar: falta el punto de entrada que conecte las capas. Las pruebas de `infrastructure/persistence` levantan su propio PostgreSQL con Testcontainers y se omiten si Docker no está corriendo.
