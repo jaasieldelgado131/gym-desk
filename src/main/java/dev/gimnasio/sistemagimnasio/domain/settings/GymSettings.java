@@ -4,12 +4,15 @@ import dev.gimnasio.sistemagimnasio.domain.shared.DomainException;
 
 import java.util.Currency;
 
-/** Que la moneda no cambie si ya hay cobros o ventas lo valida la capa de aplicación. */
+/**
+ * Que la moneda no cambie si ya hay cobros o ventas lo valida la capa de aplicación.
+ * {@code logo} es la imagen guardada, o null; se copia para que nadie la altere desde fuera.
+ */
 public record GymSettings(
         String gymName,
         String address,
         String phone,
-        String logoPath,
+        byte[] logo,
         String receiptFooter,
         Currency currency,
         int warningDays,
@@ -35,5 +38,11 @@ public record GymSettings(
         if (folioPrefix == null || folioPrefix.isBlank()) {
             throw new DomainException("El prefijo de folios es obligatorio.");
         }
+        logo = logo == null ? null : logo.clone();
+    }
+
+    @Override
+    public byte[] logo() {
+        return logo == null ? null : logo.clone();
     }
 }
