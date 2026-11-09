@@ -27,11 +27,11 @@ class MembershipRulesTest {
     private static final Plan MENSUAL = new Plan(1L, "Mensual", 30, Money.of("450"), true);
 
     private static Membership endingOn(LocalDate end) {
-        return new Membership(null, 1, 1, end.minusDays(30), end);
+        return new Membership(null, 1, 1, 1, end.minusDays(30), end);
     }
 
     private static Membership between(LocalDate start, LocalDate end) {
-        return new Membership(null, 1, 1, start, end);
+        return new Membership(null, 1, 1, 1, start, end);
     }
 
     private static MemberStatus status(Membership latest) {
@@ -134,7 +134,7 @@ class MembershipRulesTest {
         Random random = new Random(20261104L);
         int[] durations = {1, 30, 90, 180, 365};
         LocalDate firstStart = LocalDate.of(2026, 1, 1);
-        Membership current = Membership.begin(1, MENSUAL, firstStart);
+        Membership current = Membership.begin(1, MENSUAL, 1, firstStart);
         long paidDays = MENSUAL.durationDays();
 
         for (int i = 0; i < 300; i++) {
@@ -142,7 +142,7 @@ class MembershipRulesTest {
             LocalDate payDay = current.start().plusDays(random.nextInt((int) length + 1));
             Plan plan = new Plan(2L, "Plan", durations[random.nextInt(durations.length)], Money.of("100"), true);
 
-            current = Membership.begin(1, plan, MembershipRules.renewalStart(current, payDay));
+            current = Membership.begin(1, plan, 1, MembershipRules.renewalStart(current, payDay));
             paidDays += plan.durationDays();
         }
         assertEquals(firstStart.plusDays(paidDays), current.end());
@@ -151,7 +151,7 @@ class MembershipRulesTest {
     @Test
     void pagarVencido_cubreElPlanCompletoDesdeElDiaDelPago() {
         Membership vencida = endingOn(TODAY.minusDays(12));
-        Membership nueva = Membership.begin(1, MENSUAL, MembershipRules.renewalStart(vencida, TODAY));
+        Membership nueva = Membership.begin(1, MENSUAL, 1, MembershipRules.renewalStart(vencida, TODAY));
         assertEquals(TODAY, nueva.start());
         assertEquals(TODAY.plusDays(30), nueva.end());
     }
@@ -159,7 +159,7 @@ class MembershipRulesTest {
     @Test
     void cobrarUnMensualASocioVencido_loDejaVigente() {
         Membership vencida = endingOn(TODAY.minusDays(GRACE - 1));
-        Membership nueva = Membership.begin(1, MENSUAL, MembershipRules.renewalStart(vencida, TODAY));
+        Membership nueva = Membership.begin(1, MENSUAL, 1, MembershipRules.renewalStart(vencida, TODAY));
         assertEquals(VIGENTE, statusOn(List.of(vencida, nueva), TODAY));
     }
 
@@ -170,7 +170,7 @@ class MembershipRulesTest {
         List<Membership> history = new ArrayList<>();
         assertEquals(SIN_MEMBRESIA, statusOn(history, joined));
 
-        history.add(Membership.begin(1, MENSUAL,
+        history.add(Membership.begin(1, MENSUAL, 1,
                 MembershipRules.renewalStart(null, joined)));
         LocalDate end = LocalDate.of(2026, 2, 9);
         assertEquals(end, history.getFirst().end());
@@ -186,7 +186,7 @@ class MembershipRulesTest {
         LocalDate payDay = end.plusDays(45);
         assertEquals(List.of(new Deactivation(end, null)), MembershipRules.deactivations(history, payDay, GRACE));
 
-        history.add(Membership.begin(1, MENSUAL,
+        history.add(Membership.begin(1, MENSUAL, 1,
                 MembershipRules.renewalStart(MembershipRules.latest(history), payDay)));
         assertEquals(VIGENTE, statusOn(history, payDay));
         assertEquals(List.of(new Deactivation(end, payDay)), MembershipRules.deactivations(history, payDay, GRACE));

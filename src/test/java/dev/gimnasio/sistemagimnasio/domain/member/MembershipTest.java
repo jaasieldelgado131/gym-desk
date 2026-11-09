@@ -15,25 +15,26 @@ class MembershipTest {
 
     @Test
     void elVencimientoEsElInicioMasLosDiasDelPlan_aunqueCruceFinDeMes() {
-        Membership m = Membership.begin(7, MENSUAL, LocalDate.of(2026, 1, 31));
+        Membership m = Membership.begin(7, MENSUAL, 15, LocalDate.of(2026, 1, 31));
         assertEquals(LocalDate.of(2026, 3, 2), m.end());
         assertEquals(7, m.memberId());
         assertEquals(1, m.planId());
+        assertEquals(15, m.paymentId());
     }
 
     /** La duración es en días: un anual que cruza un 29 de febrero vence un día antes del aniversario. */
     @Test
     void unPlanAnualQueCruzaUnAnioBisiesto_dura365DiasNoUnAnioCalendario() {
-        assertEquals(LocalDate.of(2028, 2, 29), Membership.begin(1, ANUAL, LocalDate.of(2027, 3, 1)).end());
-        assertEquals(LocalDate.of(2029, 2, 28), Membership.begin(1, ANUAL, LocalDate.of(2028, 2, 29)).end());
+        assertEquals(LocalDate.of(2028, 2, 29), Membership.begin(1, ANUAL, 1, LocalDate.of(2027, 3, 1)).end());
+        assertEquals(LocalDate.of(2029, 2, 28), Membership.begin(1, ANUAL, 1, LocalDate.of(2028, 2, 29)).end());
     }
 
     @Test
     void elVencimientoDebeSerPosteriorAlInicio() {
         LocalDate day = LocalDate.of(2026, 11, 4);
-        assertThrows(DomainException.class, () -> new Membership(null, 1, 1, day, day));
-        assertThrows(DomainException.class, () -> new Membership(null, 1, 1, day, day.minusDays(1)));
-        assertThrows(DomainException.class, () -> new Membership(null, 1, 1, null, day));
-        assertThrows(DomainException.class, () -> new Membership(null, 1, 1, day, null));
+        assertThrows(DomainException.class, () -> new Membership(null, 1, 1, 1, day, day));
+        assertThrows(DomainException.class, () -> new Membership(null, 1, 1, 1, day, day.minusDays(1)));
+        assertThrows(DomainException.class, () -> new Membership(null, 1, 1, 1, null, day));
+        assertThrows(DomainException.class, () -> new Membership(null, 1, 1, 1, day, null));
     }
 }
