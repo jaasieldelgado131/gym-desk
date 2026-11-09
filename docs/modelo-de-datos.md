@@ -133,7 +133,7 @@ Un contador por serie de folios.
 | `serie` | `varchar(10)` | PK: `COBRO` o `VENTA` |
 | `prefijo` | `varchar(20)` | obligatorio, por ejemplo `GYM-` |
 | `ultimo` | `bigint` | último número entregado, 0 al inicio |
-| `ancho` | `smallint` | dígitos con ceros a la izquierda, 4 por defecto |
+| `ancho` | `smallint` | dígitos con ceros a la izquierda, 4 por defecto; un número más largo se escribe completo, sin cortarse |
 
 El siguiente folio se toma con `UPDATE folio_secuencia SET ultimo = ultimo + 1 WHERE serie = ... RETURNING ...`, dentro de la misma transacción del cobro o la venta (función `siguiente_folio`). Así dos cajas nunca reciben el mismo número. Nunca se calcula con `MAX(folio) + 1`.
 
@@ -147,7 +147,7 @@ Para usar una sola numeración en cobros y ventas, ambos procesos piden la misma
 |---|---|---|
 | `id` | `bigint` | PK |
 | `nombre` | `varchar(100)` | obligatorio |
-| `nombre_usuario` | `varchar(50)` | obligatorio, único sin distinguir mayúsculas; con él se entra, no con el correo |
+| `nombre_usuario` | `varchar(50)` | obligatorio, único y buscado sin distinguir mayúsculas; con él se entra, no con el correo |
 | `contrasena_hash` | `varchar(255)` | obligatorio; hash Argon2id, nunca la contraseña |
 | `rol` | `rol_usuario` | obligatorio |
 | `activo` | `boolean` | `true` por defecto; un usuario inactivo no entra, pero sus cobros y ventas se conservan |

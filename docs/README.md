@@ -64,7 +64,7 @@ sistema-gimnasio/
     │       └── common/                  navegación, diálogos, formatos, atajos     (planeado)
     │
     ├── main/resources/
-    │   ├── db/migration/                V1__create_app_user.sql
+    │   ├── db/migration/                V1__esquema_inicial.sql (todo el modelo de datos)
     │   ├── i18n/messages_es.properties  (planeado)
     │   └── fxml/   css/app.css   logback.xml   (planeado)
     │
