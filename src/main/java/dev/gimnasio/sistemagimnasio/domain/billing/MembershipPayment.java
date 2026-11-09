@@ -19,6 +19,18 @@ public record MembershipPayment(
         Money amount,
         long userId) {
 
+    public MembershipPayment {
+        if (folio == null) {
+            throw new DomainException("El folio es obligatorio.");
+        }
+        if (dateTime == null) {
+            throw new DomainException("La fecha y hora del cobro son obligatorias.");
+        }
+        if (amount == null) {
+            throw new DomainException("El monto es obligatorio.");
+        }
+    }
+
     public static MembershipPayment charge(Folio folio, LocalDateTime dateTime, long memberId, Plan plan,
                                  PaymentMethod method, long userId) {
         if (!plan.active()) {
