@@ -17,6 +17,10 @@ Arquitectura por capas (hexagonal): el dominio es Java puro y no depende de nada
 
 Tablas, relaciones y reglas de la base: [modelo-de-datos.md](modelo-de-datos.md). El DBML de origen está en [modelo-de-datos.dbml](modelo-de-datos.dbml).
 
+## Contratos
+
+Qué envía la UI a cada caso de uso, qué recibe y cómo falla (implementados y planeados): [contratos.md](contratos.md).
+
 ## Estructura
 
 Paquete base: `dev.gimnasio.sistemagimnasio`. Lo marcado como *(planeado)* aún no existe en disco.
