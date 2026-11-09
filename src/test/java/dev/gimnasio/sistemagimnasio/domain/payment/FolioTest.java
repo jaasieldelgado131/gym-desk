@@ -52,4 +52,10 @@ class FolioTest {
     void generarConPrefijoAusente_seRechaza(String prefix) {
         assertThrows(DomainException.class, () -> Folio.of(prefix, 1));
     }
+
+    @ParameterizedTest
+    @ValueSource(longs = {0, -1})
+    void consecutivoMenorAUno_seRechaza(long sequence) {
+        assertThrows(DomainException.class, () -> Folio.of("GYM-", sequence));
+    }
 }
