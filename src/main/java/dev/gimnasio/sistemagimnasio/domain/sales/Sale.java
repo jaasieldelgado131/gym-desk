@@ -16,6 +16,9 @@ public record Sale(
         long userId) {
 
     public Sale {
+        if (folio == null) {
+            throw new DomainException("La venta debe tener su folio.");
+        }
         if (lines == null || lines.isEmpty()) {
             throw new DomainException("La venta debe tener al menos un producto.");
         }

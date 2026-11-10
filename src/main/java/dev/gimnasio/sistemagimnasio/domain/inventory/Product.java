@@ -38,6 +38,9 @@ public record Product(
         if (quantity < 0) {
             throw new DomainException("La cantidad no puede ser negativa.");
         }
+        if (quantity == 0 && type != MovementType.AJUSTE) {
+            throw new DomainException("La cantidad de una entrada o salida debe ser de al menos 1.");
+        }
         int result = switch (type) {
             case ENTRADA -> stock + quantity;
             case SALIDA -> stock - quantity;

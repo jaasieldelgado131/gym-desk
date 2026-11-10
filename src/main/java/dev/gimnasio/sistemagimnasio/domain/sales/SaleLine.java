@@ -10,6 +10,9 @@ public record SaleLine(long productId, String productName, int quantity, Money u
         if (quantity < 1) {
             throw new DomainException("La cantidad debe ser de al menos 1.");
         }
+        if (unitPrice == null) {
+            throw new DomainException("El renglón debe tener su precio.");
+        }
     }
 
     public static SaleLine of(Product product, int quantity) {
