@@ -8,6 +8,7 @@ import dev.gimnasio.sistemagimnasio.domain.shared.Money;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -30,7 +31,7 @@ class MembershipPaymentTest {
     void enEfectivo_guardaLoRecibido_yCalculaElCambio() {
         MembershipPayment payment = MembershipPayment.charge(FOLIO, NOW, 7, ESTUDIANTE, EFECTIVO, Money.of("500"), 3);
         assertEquals(Money.of("500.00"), payment.cashReceived());
-        assertEquals(Money.of("150.00"), payment.change());
+        assertEquals(Optional.of(Money.of("150.00")), payment.change());
     }
 
     @Test
@@ -49,7 +50,7 @@ class MembershipPaymentTest {
     void enOtroMetodo_loRecibidoSeIgnora() {
         MembershipPayment payment = MembershipPayment.charge(FOLIO, NOW, 7, ESTUDIANTE, TARJETA, Money.of("500"), 3);
         assertNull(payment.cashReceived());
-        assertNull(payment.change());
+        assertEquals(Optional.empty(), payment.change());
     }
 
     @Test
