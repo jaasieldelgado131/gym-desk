@@ -31,7 +31,9 @@ public final class Authenticate {
                 .orElseThrow(() -> new AuthenticationException(INVALID_CREDENTIALS));
 
         User user = credentials.user();
-        user.requireActive();
+        if (!user.active()) {
+            throw new AuthenticationException("El usuario está desactivado.");
+        }
         return user;
     }
 }

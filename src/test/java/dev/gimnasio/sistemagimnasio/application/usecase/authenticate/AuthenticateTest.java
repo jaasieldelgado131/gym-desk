@@ -47,6 +47,12 @@ class AuthenticateTest {
             lookups++;
             return Optional.ofNullable(byUsername.get(username));
         }
+
+        @Override
+        public Optional<User> findById(long id) {
+            return byUsername.values().stream().map(UserCredentials::user)
+                    .filter(user -> user.id() == id).findFirst();
+        }
     }
 
     private final FakeHasher hasher = new FakeHasher();

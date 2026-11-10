@@ -56,6 +56,13 @@ class RoleTest {
     }
 
     @Test
+    void cadaRol_tieneSuNombreParaMostrar() {
+        assertEquals("Administrador", Role.ADMINISTRADOR.displayName());
+        assertEquals("Recepción", Role.RECEPCION.displayName());
+        assertEquals("Caja", Role.CAJA.displayName());
+    }
+
+    @Test
     void modificarLosPermisosDevueltos_noAmpliaLosDelRol() {
         assertThrows(UnsupportedOperationException.class, () -> Role.CAJA.permissions().add(MANAGE_USERS));
         assertFalse(Role.CAJA.can(MANAGE_USERS));

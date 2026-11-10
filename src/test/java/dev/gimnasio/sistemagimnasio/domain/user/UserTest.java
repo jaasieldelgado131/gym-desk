@@ -34,6 +34,20 @@ class UserTest {
     }
 
     @Test
+    void sinPermiso_elMensajeNombraElRol() {
+        User caja = new User(1L, "Lucía", "lucia", Role.CAJA, true);
+        DomainException e = assertThrows(DomainException.class, () -> caja.requirePermission(Permission.MANAGE_SETTINGS));
+        assertEquals("Tu rol (Caja) no tiene permiso para esta acción.", e.getMessage());
+    }
+
+    @Test
+    void desactivado_elMensajePideVolverAIniciarSesion() {
+        User user = new User(1L, "Ana", "ana", Role.ADMINISTRADOR, false);
+        DomainException e = assertThrows(DomainException.class, user::requireActive);
+        assertEquals("Tu sesión no es válida. Vuelve a iniciar sesión.", e.getMessage());
+    }
+
+    @Test
     void nombreYUsuario_seGuardanSinEspaciosAlrededor() {
         User user = new User(null, " Ana López ", " ana ", Role.CAJA, true);
         assertEquals("Ana López", user.name());

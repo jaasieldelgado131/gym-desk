@@ -32,6 +32,17 @@ public final class PostgresUserRepository implements UserRepository {
                 .findOne());
     }
 
+    @Override
+    public Optional<User> findById(long id) {
+        return jdbi.withHandle(handle -> handle.createQuery("""
+                        SELECT id, nombre, nombre_usuario, rol::text AS rol, activo
+                        FROM usuario
+                        WHERE id = :id""")
+                .bind("id", id)
+                .map(PostgresUserRepository::mapUser)
+                .findOne());
+    }
+
     private static UserCredentials mapCredentials(ResultSet rs, StatementContext ctx) throws SQLException {
         return new UserCredentials(mapUser(rs, ctx), rs.getString("contrasena_hash"));
     }

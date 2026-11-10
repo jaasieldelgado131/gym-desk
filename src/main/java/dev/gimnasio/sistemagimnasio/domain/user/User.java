@@ -20,14 +20,14 @@ public record User(Long id, String name, String username, Role role, boolean act
 
     public void requireActive() {
         if (!active) {
-            throw new DomainException("El usuario está desactivado.");
+            throw new DomainException("Tu sesión no es válida. Vuelve a iniciar sesión.");
         }
     }
 
     public void requirePermission(Permission permission) {
         requireActive();
         if (!role.can(permission)) {
-            throw new DomainException("El rol (" + role + ") no permite esta acción.");
+            throw new DomainException("Tu rol (" + role.displayName() + ") no tiene permiso para esta acción.");
         }
     }
 }

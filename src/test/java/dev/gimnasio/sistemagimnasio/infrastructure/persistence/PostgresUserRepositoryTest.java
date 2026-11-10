@@ -65,6 +65,14 @@ class PostgresUserRepositoryTest {
     }
 
     @Test
+    void porId_devuelveAlUsuarioSinSuHash_oVacioSiNoExiste() {
+        long id = insert("Lucía Pérez", "lucia", "caja", false, "hash-de-lucia");
+
+        assertEquals(Optional.of(new User(id, "Lucía Pérez", "lucia", Role.CAJA, false)), repository.findById(id));
+        assertEquals(Optional.empty(), repository.findById(id + 1));
+    }
+
+    @Test
     void usuarioDesactivado_seDevuelveIgual_paraQueElCasoDeUsoDecida() {
         insert("Pedro Ruiz", "pedro", "recepcion", false, "hash-de-pedro");
         assertFalse(repository.findCredentialsByUsername("pedro").orElseThrow().user().active());
