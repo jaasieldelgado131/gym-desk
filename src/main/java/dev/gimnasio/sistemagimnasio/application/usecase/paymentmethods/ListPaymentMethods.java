@@ -2,7 +2,6 @@ package dev.gimnasio.sistemagimnasio.application.usecase.paymentmethods;
 
 import dev.gimnasio.sistemagimnasio.application.port.out.PaymentMethodRepository;
 import dev.gimnasio.sistemagimnasio.application.shared.Authorizer;
-import dev.gimnasio.sistemagimnasio.application.shared.CatalogItem;
 import dev.gimnasio.sistemagimnasio.domain.user.Permission;
 import dev.gimnasio.sistemagimnasio.domain.user.User;
 
@@ -19,7 +18,7 @@ public final class ListPaymentMethods {
     }
 
     /** Ordenados por nombre. */
-    public List<CatalogItem> execute(User actor, boolean includeInactive) {
+    public List<PaymentMethodItem> execute(User actor, boolean includeInactive) {
         authorizer.require(actor, Permission.MANAGE_SETTINGS);
         return methods.findAll(includeInactive).stream().map(PaymentMethodRules::toItem).toList();
     }

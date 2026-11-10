@@ -1,10 +1,11 @@
 package dev.gimnasio.sistemagimnasio.application.usecase.paymentmethods;
 
+import dev.gimnasio.sistemagimnasio.application.fakes.ImmediateTransactions;
 import dev.gimnasio.sistemagimnasio.application.fakes.InMemoryPaymentMethods;
 import dev.gimnasio.sistemagimnasio.application.fakes.InMemoryUsers;
 import dev.gimnasio.sistemagimnasio.application.shared.Authorizer;
-import dev.gimnasio.sistemagimnasio.application.shared.CatalogCommand;
-import dev.gimnasio.sistemagimnasio.application.shared.CatalogItem;
+
+
 import dev.gimnasio.sistemagimnasio.application.shared.NotFoundException;
 import dev.gimnasio.sistemagimnasio.application.shared.ValidationException;
 import dev.gimnasio.sistemagimnasio.domain.payment.PaymentMethod;
@@ -34,9 +35,10 @@ class PaymentMethodsTest {
     private final User admin = users.admin();
 
     private final ListPaymentMethods list = new ListPaymentMethods(methods, authorizer);
-    private final CreatePaymentMethod create = new CreatePaymentMethod(methods, authorizer);
-    private final UpdatePaymentMethod update = new UpdatePaymentMethod(methods, authorizer);
-    private final SetPaymentMethodActive setActive = new SetPaymentMethodActive(methods, authorizer);
+    private final ImmediateTransactions transactions = new ImmediateTransactions();
+    private final CreatePaymentMethod create = new CreatePaymentMethod(methods, transactions, authorizer);
+    private final UpdatePaymentMethod update = new UpdatePaymentMethod(methods, transactions, authorizer);
+    private final SetPaymentMethodActive setActive = new SetPaymentMethodActive(methods, transactions, authorizer);
 
     private final PaymentMethod efectivo = methods.add("Efectivo", true, true);
     private final PaymentMethod tarjeta = methods.add("Tarjeta", false, true);
@@ -53,14 +55,14 @@ class PaymentMethodsTest {
             methods.add("bitcoin", false, true);
 
             assertEquals(List.of("bitcoin", "Efectivo", "Tarjeta"),
-                    list.execute(admin, false).stream().map(CatalogItem::name).toList());
+                    list.execute(admin, false).stream().map(PaymentMethodItem::name).toList());
             assertEquals(List.of("bitcoin", "Efectivo", "Tarjeta", "Vales"),
-                    list.execute(admin, true).stream().map(CatalogItem::name).toList());
+                    list.execute(admin, true).stream().map(PaymentMethodItem::name).toList());
         }
 
         @Test
-        void cadaElemento_traeSiEsEfectivo_yNuncaEsDeSistema() {
-            assertEquals(new CatalogItem(efectivo.id(), "Efectivo", true, true, false), list.execute(admin, false).getFirst());
+        void cadaElemento_traeSiEsEfectivoYSiEstaActivo() {
+            assertEquals(new PaymentMethodItem(efectivo.id(), "Efectivo", true, true), list.execute(admin, false).getFirst());
         }
     }
 
@@ -68,7 +70,7 @@ class PaymentMethodsTest {
     class Crear {
         @Test
         void quedaActivo_conElNombreRecortado() {
-            CatalogItem item = create.execute(admin, new CatalogCommand("  Transferencia ", false));
+            PaymentMethodItem item = create.execute(admin, new PaymentMethodCommand("  Transferencia ", false));
 
             assertEquals("Transferencia", item.name());
             assertTrue(item.active());
@@ -80,22 +82,22 @@ class PaymentMethodsTest {
         @NullAndEmptySource
         @ValueSource(strings = {"   "})
         void sinNombre_seRechaza(String name) {
-            assertEquals(Map.of("name", "Escribe el nombre."), errors(() -> create.execute(admin, new CatalogCommand(name, false))));
+            assertEquals(Map.of("name", "Escribe el nombre."), errors(() -> create.execute(admin, new PaymentMethodCommand(name, false))));
             assertEquals(0, methods.writes);
         }
 
         @Test
         void nombreDeMasDe40Caracteres_seRechaza_y40SeAcepta() {
             assertEquals(Map.of("name", "Usa 40 caracteres o menos."),
-                    errors(() -> create.execute(admin, new CatalogCommand("x".repeat(41), false))));
-            assertEquals(40, create.execute(admin, new CatalogCommand("x".repeat(40), false)).name().length());
+                    errors(() -> create.execute(admin, new PaymentMethodCommand("x".repeat(41), false))));
+            assertEquals(40, create.execute(admin, new PaymentMethodCommand("x".repeat(40), false)).name().length());
         }
 
         @ParameterizedTest
         @ValueSource(strings = {"Tarjeta", "TARJETA", " tarjeta ", "vales"})
         void nombreRepetido_sinDistinguirMayusculas_niInactivos_seRechaza(String name) {
             assertEquals(Map.of("name", "Ya existe uno con ese nombre."),
-                    errors(() -> create.execute(admin, new CatalogCommand(name, false))));
+                    errors(() -> create.execute(admin, new PaymentMethodCommand(name, false))));
         }
     }
 
@@ -103,27 +105,27 @@ class PaymentMethodsTest {
     class Editar {
         @Test
         void cambiaNombreYEfectivo_yConservaSiEstaActivo() {
-            CatalogItem item = update.execute(admin, vales.id(), new CatalogCommand("Vales de despensa", true));
+            PaymentMethodItem item = update.execute(admin, vales.id(), new PaymentMethodCommand("Vales de despensa", true));
 
-            assertEquals(new CatalogItem(vales.id(), "Vales de despensa", false, true, false), item);
+            assertEquals(new PaymentMethodItem(vales.id(), "Vales de despensa", true, false), item);
             assertEquals(new PaymentMethod(vales.id(), "Vales de despensa", true, false), methods.get(vales.id()));
         }
 
         @Test
         void conservarSuPropioNombre_oCambiarleLasMayusculas_sePermite() {
-            assertEquals("TARJETA", update.execute(admin, tarjeta.id(), new CatalogCommand("TARJETA", false)).name());
+            assertEquals("TARJETA", update.execute(admin, tarjeta.id(), new PaymentMethodCommand("TARJETA", false)).name());
         }
 
         @Test
         void tomarElNombreDeOtro_seRechaza() {
             assertEquals(Map.of("name", "Ya existe uno con ese nombre."),
-                    errors(() -> update.execute(admin, tarjeta.id(), new CatalogCommand("efectivo", false))));
+                    errors(() -> update.execute(admin, tarjeta.id(), new PaymentMethodCommand("efectivo", false))));
         }
 
         @Test
         void unIdQueNoExiste_seRechaza() {
             NotFoundException e = assertThrows(NotFoundException.class,
-                    () -> update.execute(admin, 99, new CatalogCommand("Otro", false)));
+                    () -> update.execute(admin, 99, new PaymentMethodCommand("Otro", false)));
             assertEquals("El método de pago ya no existe. Recarga la pantalla.", e.getMessage());
         }
     }
@@ -158,14 +160,22 @@ class PaymentMethodsTest {
         }
     }
 
+    @Test
+    void crearEditarYActivar_ocurrenCadaUnoEnSuTransaccion() {
+        create.execute(admin, new PaymentMethodCommand("Otro", false));
+        update.execute(admin, tarjeta.id(), new PaymentMethodCommand("Tarjeta de crédito", false));
+        setActive.execute(admin, tarjeta.id(), false);
+        assertEquals(3, transactions.started);
+    }
+
     @ParameterizedTest
     @EnumSource(value = Role.class, names = {"RECEPCION", "CAJA"})
     void soloElAdministrador_administraLosMetodosDePago(Role role) {
         User user = users.add("Persona", role, true);
 
         assertThrows(DomainException.class, () -> list.execute(user, true));
-        assertThrows(DomainException.class, () -> create.execute(user, new CatalogCommand("Otro", false)));
-        assertThrows(DomainException.class, () -> update.execute(user, tarjeta.id(), new CatalogCommand("Otro", false)));
+        assertThrows(DomainException.class, () -> create.execute(user, new PaymentMethodCommand("Otro", false)));
+        assertThrows(DomainException.class, () -> update.execute(user, tarjeta.id(), new PaymentMethodCommand("Otro", false)));
         assertThrows(DomainException.class, () -> setActive.execute(user, tarjeta.id(), false));
         assertEquals(0, methods.writes);
     }

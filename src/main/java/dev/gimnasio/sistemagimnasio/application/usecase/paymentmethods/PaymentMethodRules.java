@@ -1,7 +1,6 @@
 package dev.gimnasio.sistemagimnasio.application.usecase.paymentmethods;
 
 import dev.gimnasio.sistemagimnasio.application.port.out.PaymentMethodRepository;
-import dev.gimnasio.sistemagimnasio.application.shared.CatalogItem;
 import dev.gimnasio.sistemagimnasio.application.shared.NotFoundException;
 import dev.gimnasio.sistemagimnasio.application.shared.ValidationException;
 import dev.gimnasio.sistemagimnasio.domain.payment.PaymentMethod;
@@ -38,7 +37,7 @@ final class PaymentMethodRules {
         return methods.findById(id).orElseThrow(() -> new NotFoundException(NOT_FOUND));
     }
 
-    static CatalogItem toItem(PaymentMethod method) {
-        return new CatalogItem(method.id(), method.name(), method.active(), method.cash(), false);
+    static PaymentMethodItem toItem(PaymentMethod method) {
+        return new PaymentMethodItem(method.id(), method.name(), method.cash(), method.active());
     }
 }
