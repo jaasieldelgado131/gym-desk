@@ -11,15 +11,20 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 
 import java.util.Objects;
 
-/** Pantalla de acceso. */
+/** Pantalla de acceso: une la vista con {@link LoginViewModel}. */
 public final class LoginController {
+    static final String SUBMIT = "Entrar";
+    static final String SUBMITTING = "Entrando…";
+
     private final GymInfo gymInfo;
     private final Themes themes;
+    private final LoginViewModel model;
     private final FieldErrors fieldErrors = new FieldErrors();
 
     @FXML
@@ -43,9 +48,10 @@ public final class LoginController {
     @FXML
     private HBox themeRow;
 
-    public LoginController(GymInfo gymInfo, Themes themes) {
+    public LoginController(GymInfo gymInfo, Themes themes, LoginViewModel model) {
         this.gymInfo = Objects.requireNonNull(gymInfo, "gymInfo");
         this.themes = Objects.requireNonNull(themes, "themes");
+        this.model = Objects.requireNonNull(model, "model");
     }
 
     @FXML
@@ -54,14 +60,39 @@ public final class LoginController {
         gymName.setText(gymInfo.gymName());
         errorNote.getChildren().addFirst(Icons.icon("alerta"));
         errorNote.managedProperty().bind(errorNote.visibleProperty());
-        errorNote.setVisible(false);
         fieldErrors.bind("username", username, usernameError).bind("password", password, passwordError);
         themeRow.getChildren().add(ThemeSelector.create(themes));
+
+        username.textProperty().bindBidirectional(model.usernameProperty());
+        password.textProperty().bindBidirectional(model.passwordProperty());
+
+        // Mientras se revisa: el botón no se puede volver a pulsar y los campos no cambian, sin perder el foco.
+        submit.disableProperty().bind(model.busyProperty());
+        username.editableProperty().bind(model.busyProperty().not());
+        password.editableProperty().bind(model.busyProperty().not());
+        ProgressIndicator spinner = new ProgressIndicator();
+        spinner.getStyleClass().add("progreso-boton");
+        submit.graphicProperty().bind(javafx.beans.binding.Bindings.when(model.busyProperty())
+                .<javafx.scene.Node>then(spinner).otherwise((javafx.scene.Node) null));
+        submit.textProperty().bind(javafx.beans.binding.Bindings.when(model.busyProperty())
+                .then(SUBMITTING).otherwise(SUBMIT));
+
+        errorNote.visibleProperty().bind(model.generalErrorProperty().isNotNull());
+        errorText.textProperty().bind(model.generalErrorProperty());
+        model.fieldErrorsProperty().addListener((obs, old, errors) -> fieldErrors.show(errors));
+        model.focusAfterFailureProperty().addListener((obs, old, focus) -> {
+            if (focus == LoginViewModel.Focus.USERNAME) {
+                username.requestFocus();
+            } else if (focus == LoginViewModel.Focus.PASSWORD && model.fieldErrorsProperty().get().isEmpty()) {
+                password.requestFocus();
+            }
+        });
+
         Platform.runLater(username::requestFocus);
     }
 
     @FXML
     private void submit() {
-        // Se conecta con Authenticate en la siguiente entrega.
+        model.submit();
     }
 }

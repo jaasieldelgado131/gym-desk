@@ -89,6 +89,83 @@ class CapturasUiTest {
         return order;
     }
 
+    private void typeInto(Scene scene, String id, String text) throws Exception {
+        FxHarness.runFx(() -> ((javafx.scene.control.TextInputControl) scene.lookup("#" + id)).setText(text));
+    }
+
+    private String text(Scene scene, String id) throws Exception {
+        return FxHarness.onFx(() -> {
+            var node = scene.lookup("#" + id);
+            return node instanceof javafx.scene.control.Labeled l ? l.getText()
+                    : ((javafx.scene.control.TextInputControl) node).getText();
+        });
+    }
+
+    @Test
+    void entrega2AccesoFuncional() throws Exception {
+        UiFakes.Users users = new UiFakes.Users();
+        users.add("Administración", "admin", Role.ADMINISTRADOR, true);
+        users.add("Luis Pérez", "luis", Role.RECEPCION, false);
+        Scene scene = open(users);
+        FxHarness.waitUntil("foco en Usuario", () -> scene.getFocusOwner() != null
+                && "username".equals(scene.getFocusOwner().getId()));
+
+        // 1. Enter con los campos vacíos: los dos errores juntos y el foco vuelve a Usuario.
+        FxHarness.press(scene, KeyCode.ENTER, false);
+        FxHarness.waitUntil("errores por campo", () -> scene.lookup("#usernameError").isVisible());
+        assertEquals("Escribe tu nombre de usuario.", text(scene, "usernameError"));
+        assertEquals("Escribe tu contraseña.", text(scene, "passwordError"));
+        assertEquals("username", FxHarness.focusOwner(scene));
+        captureAll("entrega-2", "campos-vacios");
+
+        // 2. Contraseña incorrecta, enviada con Enter desde Contraseña.
+        typeInto(scene, "username", "admin");
+        typeInto(scene, "password", "no-es-esta");
+        FxHarness.runFx(() -> scene.lookup("#password").requestFocus());
+        FxHarness.press(scene, KeyCode.ENTER, false);
+        FxHarness.waitUntil("aviso de credenciales", () -> scene.lookup("#errorNote").isVisible());
+        assertEquals("Usuario o contraseña incorrectos. Revísalos e inténtalo de nuevo.", text(scene, "errorText"));
+        assertEquals(false, FxHarness.onFx(() -> scene.lookup("#usernameError").isVisible()), "se quitan los errores por campo");
+        assertEquals("admin", text(scene, "username"));
+        assertEquals("", text(scene, "password"));
+        assertEquals("password", FxHarness.focusOwner(scene));
+        captureAll("entrega-2", "credenciales-incorrectas");
+
+        // 3. Usuario desactivado con la contraseña correcta.
+        typeInto(scene, "username", "luis");
+        typeInto(scene, "password", UiFakes.PASSWORD);
+        FxHarness.press(scene, KeyCode.ENTER, false);
+        FxHarness.waitUntil("aviso de desactivado", () -> ((javafx.scene.control.Label) scene.lookup("#errorText"))
+                .getText().startsWith("Tu usuario está desactivado"));
+        captureAll("entrega-2", "usuario-desactivado");
+
+        // 4. Mientras se revisa: botón «Entrando…» desactivado y sin segundos envíos.
+        users.gate = new java.util.concurrent.CountDownLatch(1);
+        int before = users.lookups;
+        typeInto(scene, "username", "admin");
+        typeInto(scene, "password", UiFakes.PASSWORD);
+        FxHarness.press(scene, KeyCode.ENTER, false);
+        FxHarness.waitUntil("botón ocupado", () -> scene.lookup("#submit").isDisabled());
+        assertEquals("Entrando…", text(scene, "submit"));
+        FxHarness.press(scene, KeyCode.ENTER, false);
+        FxHarness.runFx(() -> ((javafx.scene.control.Button) scene.lookup("#submit")).fire());
+        captureAll("entrega-2", "entrando");
+        users.gate.countDown();
+        FxHarness.waitUntil("sesión iniciada", () -> scene.getRoot().lookup("#sesion-usuario") != null);
+        assertEquals(before + 1, users.lookups, "Enter repetido y clic durante la revisión no envían otra vez");
+        assertEquals("Administración · Administrador · admin", text(scene, "sesion-usuario"));
+        Scene current = FxHarness.onFx(stage::getScene);
+        captureAll("entrega-2", "sesion-iniciada");
+
+        // 5. Cerrar sesión vuelve al acceso con los campos vacíos.
+        FxHarness.runFx(() -> ((javafx.scene.control.Button) current.lookup("#cerrar-sesion")).fire());
+        FxHarness.waitUntil("vuelta al acceso", () -> current.lookup("#username") != null);
+        assertEquals("", text(current, "password"));
+        assertEquals(false, FxHarness.onFx(() -> ui.session().isOpen()));
+        System.out.println("[teclado] acceso funcional: Enter envía desde Usuario y Contraseña; foco al campo con error; "
+                + "Enter y clic repetidos ignorados mientras revisa");
+    }
+
     /** Todos los iconos en ambos temas, para revisar que la conversión de Lucide a SVGPath dibuja bien. */
     @Test
     void entrega1Iconos() throws Exception {

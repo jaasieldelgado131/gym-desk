@@ -515,3 +515,10 @@
     -fx-padding: 10 12;
     -fx-max-width: Infinity;
 }
+
+/* Indicador dentro del botón mientras se envía */
+.progreso-boton {
+    -fx-pref-width: 18; -fx-pref-height: 18; -fx-max-width: 18; -fx-max-height: 18;
+    -fx-progress-color: -gd-sobre-acento;
+}
+.button.primario:disabled .progreso-boton { -fx-opacity: 1; }

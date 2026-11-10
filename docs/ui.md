@@ -65,6 +65,17 @@ DB_PASSWORD=12345 ./mvnw javafx:run
 
 El proyecto compila para Java 25; con un JDK predeterminado más antiguo, define `JAVA_HOME` con un JDK 25 o posterior.
 
+### Administrador de desarrollo
+
+La base recién migrada no tiene usuarios (el alta del primer administrador de una instalación real sigue pendiente en [contratos.md](contratos.md#pendientes-que-afectan-los-contratos)). Para entrar en desarrollo:
+
+```bash
+docker compose up -d
+scripts/dev/crear-admin-dev.sh
+```
+
+El script pide nombre, usuario y contraseña (dos veces, sin mostrarla), compila el proyecto, calcula el hash Argon2id con el mismo `Argon2PasswordHasher` de la app (`scripts/dev/HashPassword.java`, que recibe la contraseña por variable de entorno y no como argumento) e inserta el usuario como administrador activo en el PostgreSQL de `docker-compose.yml`. Si el usuario ya existe, actualiza su nombre y contraseña y lo deja activo como administrador. Las credenciales no se guardan en ningún archivo del repositorio. Usa el `java` de `JAVA_HOME` si está definido.
+
 ## Pruebas
 
 ```bash
@@ -111,3 +122,15 @@ Con JDK 26.0.2, Docker 29.0.3 y PostgreSQL 16 de `docker-compose.yml`:
 | Capturas de los 29 iconos | `iconos-{claro,oscuro}.png`: se revisaron uno por uno contra el prototipo |
 | Teclado en el acceso | Al abrir, el foco está en Usuario. Tab: Usuario → Contraseña → Entrar → selector de tema → Usuario. El selector es un grupo de opciones: las flechas cambian de tema, Espacio no quita el elegido |
 | Entrar | Todavía sin acción: se conecta en la entrega 2 |
+
+### Fase 1 · Entrega 2: acceso funcional (10/11/2026)
+
+`LoginViewModel` envía `AuthenticateCommand` con `Background` (fuera del hilo de JavaFX) y reparte la respuesta: errores por campo, aviso general o sesión iniciada. Mientras revisa, el botón muestra «Entrando…», no se puede volver a pulsar y los campos no cambian; un segundo envío (Enter repetido, doble clic) se ignora. Tras un intento fallido la contraseña se borra, como en el prototipo. Al entrar, la sesión guarda al usuario como `actor`; cerrar sesión lo descarta y vuelve al acceso.
+
+| Comprobación | Resultado |
+|---|---|
+| `LoginViewModelTest` (9) | Campos vacíos juntos y en orden sin consultar al usuario; solo contraseña vacía; contraseña incorrecta (conserva el usuario, borra la contraseña); usuario inexistente con el mismo mensaje; usuario desactivado; acceso correcto; un intento nuevo borra el aviso anterior; envíos repetidos mientras revisa se ignoran (una sola consulta y un solo inicio de sesión); falla técnica con el mensaje genérico |
+| Capturas en ambos temas y tamaños | `campos-vacios`, `credenciales-incorrectas`, `usuario-desactivado`, `entrando`, `sesion-iniciada` (provisional) |
+| Teclado | Enter envía desde Usuario y desde Contraseña. Con campos vacíos el foco va a Usuario; con credenciales incorrectas, a Contraseña. Enter y clic repetidos durante la revisión no envían otra vez. Cerrar sesión vuelve al acceso con la contraseña vacía |
+| Con PostgreSQL y Argon2 | `crear-admin-dev.sh` creó un administrador con hash `$argon2id$v=19$m=65536,t=3,p=1`; `Authenticate` con `PostgresUserRepository` lo aceptó con su contraseña y rechazó una incorrecta. El script rechaza un usuario con espacios y una contraseña corta. El usuario de prueba se borró después |
+| App real | Arranca, migra y muestra el acceso con la base de desarrollo |

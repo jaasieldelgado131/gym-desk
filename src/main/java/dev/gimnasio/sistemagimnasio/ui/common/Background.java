@@ -25,6 +25,11 @@ public final class Background implements AutoCloseable {
         this.uiThread = Objects.requireNonNull(uiThread, "uiThread");
     }
 
+    /** Con otros hilos: en las pruebas, un ejecutor propio y {@code Runnable::run} en lugar del hilo de JavaFX. */
+    public static Background using(ExecutorService workers, Executor uiThread) {
+        return new Background(workers, uiThread);
+    }
+
     public static Background start() {
         var threads = Thread.ofPlatform().daemon().name("ui-worker-", 1).factory();
         return new Background(Executors.newFixedThreadPool(WORKERS, threads), Platform::runLater);
