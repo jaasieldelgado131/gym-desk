@@ -1,0 +1,105 @@
+/*
+ * Tema de la app. Los colores se definen una vez en .root y el resto los usa por nombre.
+ */
+.root {
+    -gd-bg: #f4f5f7;
+    -gd-surface: #ffffff;
+    -gd-border: #d9dce1;
+    -gd-text: #1f2328;
+    -gd-muted: #5f6672;
+    -gd-accent: #2f54d4;
+    -gd-accent-hover: #2445b8;
+    -gd-accent-text: #ffffff;
+    -gd-danger: #c62828;
+    -gd-danger-bg: #fdecea;
+    -gd-focus: #2f54d466;
+
+    -fx-font-size: 14px;
+    -fx-base: -gd-surface;
+    -fx-background: -gd-bg;
+    -fx-accent: -gd-accent;
+    -fx-focus-color: -gd-accent;
+    -fx-faint-focus-color: -gd-focus;
+    -fx-text-fill: -gd-text;
+    -fx-background-color: -gd-bg;
+}
+
+/* Fondo de las pantallas sin menú (arranque, acceso). */
+.backdrop {
+    -fx-background-color: -gd-bg;
+    -fx-padding: 24;
+}
+
+.card {
+    -fx-background-color: -gd-surface;
+    -fx-background-radius: 10;
+    -fx-border-color: -gd-border;
+    -fx-border-radius: 10;
+    -fx-padding: 28 32;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.06), 12, 0, 0, 2);
+}
+
+/* Texto */
+.title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -gd-text;
+}
+
+.subtitle {
+    -fx-font-size: 15px;
+    -fx-text-fill: -gd-text;
+}
+
+.muted {
+    -fx-text-fill: -gd-muted;
+}
+
+/* Botones */
+.button {
+    -fx-background-radius: 6;
+    -fx-padding: 7 16;
+    -fx-cursor: hand;
+}
+
+.button.primary {
+    -fx-background-color: -gd-accent;
+    -fx-text-fill: -gd-accent-text;
+    -fx-font-weight: bold;
+}
+
+.button.primary:hover {
+    -fx-background-color: -gd-accent-hover;
+}
+
+.button.primary:focused {
+    -fx-background-color: -gd-focus, -gd-accent;
+    -fx-background-insets: -2, 0;
+    -fx-background-radius: 8, 6;
+}
+
+/* Campos con error (FieldErrors) */
+.text-input.invalid,
+.combo-box-base.invalid,
+.choice-box.invalid {
+    -fx-border-color: -gd-danger;
+    -fx-border-radius: 4;
+}
+
+.label.field-error {
+    -fx-text-fill: -gd-danger;
+    -fx-font-size: 12px;
+}
+
+/* Arranque */
+.startup-card {
+    -fx-min-width: 380;
+}
+
+.startup-detail {
+    -fx-background-color: -gd-danger-bg;
+    -fx-background-radius: 6;
+    -fx-text-fill: -gd-text;
+    -fx-padding: 10 12;
+    -fx-max-width: Infinity;
+}
