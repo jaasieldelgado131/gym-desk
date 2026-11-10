@@ -8,6 +8,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 import static dev.gimnasio.sistemagimnasio.domain.member.MemberStatus.BAJA;
@@ -17,13 +18,12 @@ import static dev.gimnasio.sistemagimnasio.domain.member.MemberStatus.VENCIDA;
 import static dev.gimnasio.sistemagimnasio.domain.member.MemberStatus.VIGENTE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MembershipRulesTest {
     private static final LocalDate TODAY = LocalDate.of(2026, 11, 3);
     private static final int WARNING = 7;
-    private static final int GRACE = 30;
+    private static final int AUTO_DEACTIVATION_DAYS = 30;
     private static final Plan MENSUAL = new Plan(1L, "Mensual", 30, Money.of("450"), true);
 
     private static Membership endingOn(LocalDate end) {
@@ -35,17 +35,17 @@ class MembershipRulesTest {
     }
 
     private static MemberStatus status(Membership latest) {
-        return MembershipRules.statusOf(latest, TODAY, WARNING, GRACE);
+        return MembershipRules.statusOf(latest, TODAY, WARNING, AUTO_DEACTIVATION_DAYS);
     }
 
     private static MemberStatus statusOn(List<Membership> history, LocalDate day) {
-        return MembershipRules.statusOf(MembershipRules.latest(history), day, WARNING, GRACE);
+        return MembershipRules.statusOf(MembershipRules.latest(history).orElse(null), day, WARNING, AUTO_DEACTIVATION_DAYS);
     }
 
 
     @Test
     void sinMembresias_estaSinMembresia() {
-        assertNull(MembershipRules.latest(List.of()));
+        assertEquals(Optional.empty(), MembershipRules.latest(List.of()));
         assertEquals(SIN_MEMBRESIA, status(null));
     }
 
@@ -63,14 +63,14 @@ class MembershipRulesTest {
 
     @Test
     void conCeroDiasDeAviso_soloElDiaDelVencimientoEsPorVencer() {
-        assertEquals(VIGENTE, MembershipRules.statusOf(endingOn(TODAY.plusDays(1)), TODAY, 0, GRACE));
-        assertEquals(POR_VENCER, MembershipRules.statusOf(endingOn(TODAY), TODAY, 0, GRACE));
+        assertEquals(VIGENTE, MembershipRules.statusOf(endingOn(TODAY.plusDays(1)), TODAY, 0, AUTO_DEACTIVATION_DAYS));
+        assertEquals(POR_VENCER, MembershipRules.statusOf(endingOn(TODAY), TODAY, 0, AUTO_DEACTIVATION_DAYS));
     }
 
     @Test
     void bajaAutomatica_ocurreAlCumplirseElPlazo_niUnDiaAntes() {
-        assertEquals(VENCIDA, status(endingOn(TODAY.minusDays(GRACE - 1))));
-        assertEquals(BAJA, status(endingOn(TODAY.minusDays(GRACE))));
+        assertEquals(VENCIDA, status(endingOn(TODAY.minusDays(AUTO_DEACTIVATION_DAYS - 1))));
+        assertEquals(BAJA, status(endingOn(TODAY.minusDays(AUTO_DEACTIVATION_DAYS))));
     }
 
     @Test
@@ -84,8 +84,8 @@ class MembershipRulesTest {
         Membership actual = between(TODAY.minusDays(20), TODAY.plusDays(5));
         Membership adelantada = between(TODAY.plusDays(5), TODAY.plusDays(35));
 
-        assertEquals(adelantada, MembershipRules.latest(List.of(adelantada, vieja, actual)));
-        assertEquals(adelantada, MembershipRules.latest(List.of(actual, vieja, adelantada)));
+        assertEquals(Optional.of(adelantada), MembershipRules.latest(List.of(adelantada, vieja, actual)));
+        assertEquals(Optional.of(adelantada), MembershipRules.latest(List.of(actual, vieja, adelantada)));
         assertEquals(VIGENTE, statusOn(List.of(adelantada, actual, vieja), TODAY));
     }
 
@@ -108,12 +108,12 @@ class MembershipRulesTest {
 
     @Test
     void renovarVencidaJustoAntesDeLaBaja_empiezaElDiaDelPago() {
-        assertEquals(TODAY, MembershipRules.renewalStart(endingOn(TODAY.minusDays(GRACE - 1)), TODAY));
+        assertEquals(TODAY, MembershipRules.renewalStart(endingOn(TODAY.minusDays(AUTO_DEACTIVATION_DAYS - 1)), TODAY));
     }
 
     @Test
     void reactivarDesdeBaja_empiezaElDiaDelPago() {
-        assertEquals(TODAY, MembershipRules.renewalStart(endingOn(TODAY.minusDays(GRACE + 10)), TODAY));
+        assertEquals(TODAY, MembershipRules.renewalStart(endingOn(TODAY.minusDays(AUTO_DEACTIVATION_DAYS + 10)), TODAY));
     }
 
     @Test
@@ -126,7 +126,7 @@ class MembershipRulesTest {
         Membership actual = between(TODAY.minusDays(20), TODAY.plusDays(10));
         Membership adelantada = between(TODAY.plusDays(10), TODAY.plusDays(40));
         assertEquals(adelantada.end(),
-                MembershipRules.renewalStart(MembershipRules.latest(List.of(actual, adelantada)), TODAY));
+                MembershipRules.renewalStart(MembershipRules.latest(List.of(actual, adelantada)).orElseThrow(), TODAY));
     }
 
     @Test
@@ -158,7 +158,7 @@ class MembershipRulesTest {
 
     @Test
     void cobrarUnMensualASocioVencido_loDejaVigente() {
-        Membership vencida = endingOn(TODAY.minusDays(GRACE - 1));
+        Membership vencida = endingOn(TODAY.minusDays(AUTO_DEACTIVATION_DAYS - 1));
         Membership nueva = Membership.begin(1, MENSUAL, 1, MembershipRules.renewalStart(vencida, TODAY));
         assertEquals(VIGENTE, statusOn(List.of(vencida, nueva), TODAY));
     }
@@ -179,17 +179,17 @@ class MembershipRulesTest {
         assertEquals(POR_VENCER, statusOn(history, end.minusDays(WARNING)));
         assertEquals(POR_VENCER, statusOn(history, end));
         assertEquals(VENCIDA, statusOn(history, end.plusDays(1)));
-        assertEquals(VENCIDA, statusOn(history, end.plusDays(GRACE - 1)));
-        assertEquals(BAJA, statusOn(history, end.plusDays(GRACE)));
+        assertEquals(VENCIDA, statusOn(history, end.plusDays(AUTO_DEACTIVATION_DAYS - 1)));
+        assertEquals(BAJA, statusOn(history, end.plusDays(AUTO_DEACTIVATION_DAYS)));
 
         // La fecha de baja es el último vencimiento, no el día en que se cumplió el plazo.
         LocalDate payDay = end.plusDays(45);
-        assertEquals(List.of(new Deactivation(end, null)), MembershipRules.deactivations(history, payDay, GRACE));
+        assertEquals(List.of(new Deactivation(end, null)), MembershipRules.deactivations(history, payDay, AUTO_DEACTIVATION_DAYS));
 
         history.add(Membership.begin(1, MENSUAL, 1,
-                MembershipRules.renewalStart(MembershipRules.latest(history), payDay)));
+                MembershipRules.renewalStart(MembershipRules.latest(history).orElse(null), payDay)));
         assertEquals(VIGENTE, statusOn(history, payDay));
-        assertEquals(List.of(new Deactivation(end, payDay)), MembershipRules.deactivations(history, payDay, GRACE));
+        assertEquals(List.of(new Deactivation(end, payDay)), MembershipRules.deactivations(history, payDay, AUTO_DEACTIVATION_DAYS));
     }
 
 
@@ -204,13 +204,13 @@ class MembershipRulesTest {
     void huecoDeUnDiaMenosQueElPlazo_noEsBaja_yUnHuecoIgualAlPlazo_si() {
         LocalDate end = LocalDate.of(2026, 1, 31);
         Membership first = between(end.minusDays(30), end);
-        Membership late = between(end.plusDays(GRACE - 1), end.plusDays(GRACE + 29));
-        Membership reactivation = between(end.plusDays(GRACE), end.plusDays(GRACE + 30));
-        LocalDate today = end.plusDays(GRACE + 5);
+        Membership late = between(end.plusDays(AUTO_DEACTIVATION_DAYS - 1), end.plusDays(AUTO_DEACTIVATION_DAYS + 29));
+        Membership reactivation = between(end.plusDays(AUTO_DEACTIVATION_DAYS), end.plusDays(AUTO_DEACTIVATION_DAYS + 30));
+        LocalDate today = end.plusDays(AUTO_DEACTIVATION_DAYS + 5);
 
-        assertEquals(List.of(), MembershipRules.deactivations(List.of(first, late), today, GRACE));
-        assertEquals(List.of(new Deactivation(end, end.plusDays(GRACE))),
-                MembershipRules.deactivations(List.of(first, reactivation), today, GRACE));
+        assertEquals(List.of(), MembershipRules.deactivations(List.of(first, late), today, AUTO_DEACTIVATION_DAYS));
+        assertEquals(List.of(new Deactivation(end, end.plusDays(AUTO_DEACTIVATION_DAYS))),
+                MembershipRules.deactivations(List.of(first, reactivation), today, AUTO_DEACTIVATION_DAYS));
     }
 
     @Test
@@ -218,14 +218,14 @@ class MembershipRulesTest {
         Membership anual = between(LocalDate.of(2026, 1, 1), LocalDate.of(2027, 1, 1));
         Membership mensualDentro = between(LocalDate.of(2026, 2, 1), LocalDate.of(2026, 3, 3));
         assertEquals(List.of(),
-                MembershipRules.deactivations(List.of(anual, mensualDentro), LocalDate.of(2027, 1, 15), GRACE));
+                MembershipRules.deactivations(List.of(anual, mensualDentro), LocalDate.of(2027, 1, 15), AUTO_DEACTIVATION_DAYS));
     }
 
     @Test
     void cobroRegistradoDosVeces_noGeneraBajasNiCambiaElEstado() {
         Membership m = endingOn(TODAY.plusDays(20));
         List<Membership> duplicated = List.of(m, m);
-        assertEquals(List.of(), MembershipRules.deactivations(duplicated, TODAY, GRACE));
+        assertEquals(List.of(), MembershipRules.deactivations(duplicated, TODAY, AUTO_DEACTIVATION_DAYS));
         assertEquals(VIGENTE, statusOn(duplicated, TODAY));
     }
 
@@ -244,7 +244,7 @@ class MembershipRulesTest {
         Random random = new Random(3);
         for (int i = 0; i < 25; i++) {
             Collections.shuffle(history, random);
-            assertEquals(expected, MembershipRules.deactivations(history, TODAY, GRACE), history::toString);
+            assertEquals(expected, MembershipRules.deactivations(history, TODAY, AUTO_DEACTIVATION_DAYS), history::toString);
         }
     }
 
@@ -271,13 +271,13 @@ class MembershipRulesTest {
                 LocalDate start = base.plusDays(random.nextInt(600));
                 history.add(between(start, start.plusDays(1 + random.nextInt(120))));
             }
-            int grace = 1 + random.nextInt(60);
+            int autoDeactivationDays = 1 + random.nextInt(60);
             LocalDate today = base.plusDays(random.nextInt(800));
-            String context = "historial=" + history + " hoy=" + today + " plazo=" + grace;
+            String context = "historial=" + history + " hoy=" + today + " plazo=" + autoDeactivationDays;
 
-            List<Deactivation> bajas = MembershipRules.deactivations(history, today, grace);
+            List<Deactivation> bajas = MembershipRules.deactivations(history, today, autoDeactivationDays);
             boolean open = !bajas.isEmpty() && bajas.getLast().reactivatedOn() == null;
-            MemberStatus status = MembershipRules.statusOf(MembershipRules.latest(history), today, WARNING, grace);
+            MemberStatus status = MembershipRules.statusOf(MembershipRules.latest(history).orElse(null), today, WARNING, autoDeactivationDays);
 
             assertEquals(status == BAJA, open, context);
             for (int b = 0; b < bajas.size(); b++) {
@@ -287,7 +287,7 @@ class MembershipRulesTest {
                     assertNotNull(baja.reactivatedOn(), context);
                 }
                 if (baja.reactivatedOn() != null) {
-                    assertTrue(!baja.reactivatedOn().isBefore(baja.date().plusDays(grace)), context);
+                    assertTrue(!baja.reactivatedOn().isBefore(baja.date().plusDays(autoDeactivationDays)), context);
                 }
             }
         }
