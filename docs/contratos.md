@@ -7,7 +7,7 @@ ui ──(actor + command)──▶ caso de uso ──(puerto de salida)──�
    ◀──(resultado o excepción)──      ◀──────(datos)──────
 ```
 
-Solo `Authenticate` está implementado. El resto es el contrato acordado para construir la UI y los casos de uso en paralelo. Al final están los cambios que estos contratos piden al código actual.
+Están implementados `Authenticate`, `GetGymInfo`, Configuración y el catálogo de métodos de pago. El resto es el contrato acordado para construir la UI y los casos de uso en paralelo. Al final están los cambios que estos contratos piden al código actual.
 
 ## Reglas generales
 
@@ -204,7 +204,7 @@ Los dos campos vacíos se reportan juntos. Usuario inexistente y contraseña inc
 
 **Cerrar sesión** no es un caso de uso: la UI descarta el `actor` y vuelve al login.
 
-### `GetGymInfo` · Marca y datos globales
+### `GetGymInfo` · Marca y datos globales · *implementado*
 
 Sin `actor` ni permiso: se usa también en la pantalla de acceso, antes de iniciar sesión.
 
@@ -676,31 +676,33 @@ Permiso: `MANAGE_USERS` en todos.
 
 Permiso: `MANAGE_SETTINGS` en todos.
 
-### `GetSettings` / `UpdateSettings`
+### `GetSettings` / `UpdateSettings` · *implementado*
 
-`GetSettings` recibe solo `actor`. `UpdateSettings` recibe `UpdateSettingsCommand` con los campos editables y devuelve `SettingsView`.
+`GetSettings` recibe solo `actor`. `UpdateSettings` recibe `UpdateSettingsCommand` con los campos editables y devuelve `SettingsView`. Los textos se recortan y un opcional en blanco se guarda vacío. `logo` en `null` quita el logotipo: para conservarlo, la UI reenvía los bytes que recibió. `warningDays` y `autoDeactivationDays` son `Integer` para poder reportar el campo vacío. Todos los errores se reportan juntos.
 
 **`SettingsView`**
 
 | Campo | Tipo | Reglas al guardar |
 |---|---|---|
-| `gymName` | `String` | Obligatorio. |
-| `address`, `phone` | `String` | *opcionales* |
+| `gymName` | `String` | Obligatorio, 100 caracteres o menos. |
+| `address`, `phone` | `String` | *opcionales*; 200 y 30 caracteres o menos. |
 | `receiptFooter` | `String` | *opcional*, 160 caracteres o menos. |
-| `logo` | `byte[]` | *opcional*. PNG, JPG, WEBP o SVG de hasta 300 KB. |
+| `logo` | `byte[]` | *opcional*. PNG, JPG, WEBP o SVG de hasta 300 KB, reconocido por sus primeros bytes. |
 | `currency` | `Currency` | No se puede cambiar si ya hay cobros o ventas. |
 | `warningDays` | `int` | De 1 a 60. |
 | `autoDeactivationDays` | `int` | De 1 a 365. |
-| `folioPrefix` | `String` | De 1 a 8 letras mayúsculas, números o guiones. |
+| `folioPrefix` | `String` | De 1 a 8 letras mayúsculas, números o guiones. Es el de la serie de cobros. |
 | `currencyLocked` | `boolean` | Solo lectura: `true` si ya hay cobros o ventas. |
 | `paymentsCount`, `salesCount` | `int` | Solo lectura, para explicar el bloqueo («ya hay 41 cobros y 18 ventas registrados en MXN»). |
-| `folioFormat` | `String` | Solo lectura; ejemplo del formato resultante («GYM-0001 en cobros y GYM-V-0001 en ventas»). |
+| `folioFormat` | `String` | Solo lectura; ejemplo del formato resultante («GYM-0001 en cobros»). Las ventas se agregan en la fase 2. |
 
 **Errores** (`ValidationException`):
 
 | Campo | Mensaje |
 |---|---|
-| `gymName` | Escribe el nombre del gimnasio. |
+| `gymName` | Escribe el nombre del gimnasio. · Usa 100 caracteres o menos. |
+| `address` | Usa 200 caracteres o menos. |
+| `phone` | Usa 30 caracteres o menos. |
 | `warningDays` | Escribe un número de días entre 1 y 60. |
 | `autoDeactivationDays` | Escribe un número de días entre 1 y 365. |
 | `currency` | Elige una moneda. · No se puede cambiar: ya hay cobros o ventas registrados en MXN. |
@@ -709,6 +711,8 @@ Permiso: `MANAGE_SETTINGS` en todos.
 | `logo` | Usa una imagen PNG, JPG, WEBP o SVG de hasta 300 KB. |
 
 ### Catálogos
+
+Implementado: métodos de pago. Motivos de movimiento y categorías de producto son de la fase 2.
 
 Métodos de pago, motivos de movimiento y categorías de producto comparten la misma forma. Cambia el prefijo: `PaymentMethods`, `MovementReasons`, `ProductCategories`.
 
@@ -719,13 +723,14 @@ Métodos de pago, motivos de movimiento y categorías de producto comparten la m
 | `Update…` | `long id` + `CatalogCommand` | `CatalogItem` |
 | `Set…Active` | `long id`, `boolean active` | `CatalogItem` |
 
-`cash` solo cuenta en métodos de pago; en los demás se ignora. Desactivar no cambia los registros anteriores.
+`cash` solo cuenta en métodos de pago; en los demás se ignora. El nombre se recorta y no puede repetirse sin distinguir mayúsculas, aunque el otro esté inactivo. `Create…` deja el elemento activo; `Update…` no cambia si está activo; `Set…Active` con el estado que ya tiene no hace nada. La lista va ordenada por nombre. Desactivar no cambia los registros anteriores.
 
 **Errores:**
 
 | Situación | Excepción | Mensaje |
 |---|---|---|
-| Nombre vacío o repetido | `ValidationException` (`name`) | Escribe el nombre. · Ya existe uno con ese nombre. |
+| Nombre vacío, largo o repetido | `ValidationException` (`name`) | Escribe el nombre. · Usa 40 caracteres o menos. · Ya existe uno con ese nombre. |
+| El id ya no existe | `NotFoundException` | El método de pago ya no existe. Recarga la pantalla. |
 | Desactivar el último método de pago, motivo o categoría activos | `DomainException` | Deja al menos un método de pago. · Deja al menos un motivo. · Deja al menos una categoría. |
 | Desactivar una categoría con productos activos | `DomainException` | No puedes desactivar «Bebidas»: la usa Agua 1 L. Cambia su categoría antes. |
 | Editar o desactivar un motivo de sistema | `DomainException` | Los motivos del sistema no se pueden modificar. |
@@ -734,7 +739,7 @@ Métodos de pago, motivos de movimiento y categorías de producto comparten la m
 
 | Tema | Qué falta decidir | Qué cambiaría |
 |---|---|---|
-| Folios de ventas | Una serie para cobros y ventas, o dos (`GYM-` y `GYM-V-`). | `folioFormat` y la numeración; los contratos no cambian. |
+| Folios de ventas | Una serie para cobros y ventas, o dos (`GYM-` y `GYM-V-`). Hoy solo existe la serie `COBRO`. | `folioFormat` y la numeración; los contratos no cambian. |
 | Deshacer un cobro | Si se podrá, quién y durante cuánto tiempo. | Un caso de uso `VoidMembershipPayment`. |
 | Primer arranque | Cómo se crea el primer Administrador cuando no hay usuarios. | Un caso de uso de instalación o una migración con usuario inicial. |
 
@@ -745,9 +750,6 @@ Lo que hoy no coincide con los contratos y hay que ajustar al implementar cada c
 | Dónde | Cambio |
 |---|---|
 | Migración (`plan_membresia`) | Columna `referencia_mensual_id` (FK a `plan_membresia`, *opcional*). |
-| `domain/settings/GymSettings` | El logotipo pasa de `logoPath` a bytes, como `configuracion.logotipo`. |
-| `Authenticate` | Vacíos como `ValidationException` por campo, desactivado como `AuthenticationException`, y los mensajes de la tabla. |
-| `User.requirePermission` | Mensajes de permiso y de sesión de *Errores*. |
 | Precios de planes y productos | Mayores que cero (hoy `Money` y la base admiten 0). |
 
 ## Puertos de salida implementados
@@ -759,6 +761,7 @@ Lo que los casos de uso piden a `infrastructure`. Los puertos de los casos plane
 | Método | Contrato |
 |---|---|
 | `Optional<UserCredentials> findCredentialsByUsername(String username)` | Busca sin distinguir mayúsculas. Devuelve vacío si no existe; incluye usuarios desactivados (decidir qué hacer con ellos es del caso de uso). |
+| `Optional<User> findById(long id)` | Sin hash. Vacío si no existe; incluye usuarios desactivados. |
 
 `UserCredentials(User user, String passwordHash)` va separado de `User` para que el hash solo viaje entre el repositorio y el caso de uso. Implementación: `PostgresUserRepository`.
 
@@ -770,6 +773,36 @@ Lo que los casos de uso piden a `infrastructure`. Los puertos de los casos plane
 | `boolean matches(String rawPassword, String passwordHash)` | `true` solo si corresponde. Una contraseña incorrecta devuelve `false`, no lanza excepción. |
 
 Implementación: `Argon2PasswordHasher` (Argon2id, 64 MiB, 3 iteraciones, paralelismo 1).
+
+### `SettingsRepository`
+
+| Método | Contrato |
+|---|---|
+| `GymSettings get()` | La configuración con el prefijo de la serie `COBRO`. Lanza `IllegalStateException` si falta la fila o la serie (la migración V2 las crea). |
+| `void save(GymSettings settings)` | Guarda configuración y prefijo en una sola transacción. |
+| `int folioWidth()` | El ancho de la serie `COBRO`. |
+| `int countPayments()`, `int countSales()` | Cobros y ventas registrados, para bloquear la moneda. |
+
+Implementación: `PostgresSettingsRepository`.
+
+### `PaymentMethodRepository`
+
+| Método | Contrato |
+|---|---|
+| `List<PaymentMethod> findAll(boolean includeInactive)` | Ordenados por nombre sin distinguir mayúsculas. |
+| `Optional<PaymentMethod> findById(long id)` | Vacío si no existe. |
+| `boolean existsByName(String name, Long excludeId)` | Sin distinguir mayúsculas; `excludeId` (opcional) no cuenta. |
+| `int countActive()` | Métodos activos. |
+| `PaymentMethod insert(PaymentMethod method)` | Lo devuelve con su id. |
+| `void update(PaymentMethod method)` | Nombre, efectivo y activo. Lanza `IllegalStateException` si el id no existe. |
+
+Implementación: `PostgresPaymentMethodRepository`.
+
+### Permisos y reloj
+
+`Authorizer.require(actor, permiso)` recarga al actor con `UserRepository.findById` antes de revisar el permiso: un usuario desactivado o con otro rol durante la sesión recibe los mensajes de *Errores* en su siguiente operación. Devuelve el usuario vigente para registrarlo como quien hizo la operación.
+
+«Hoy» sale de un `java.time.Clock` inyectado en el caso de uso, sin puerto propio.
 
 ## Al agregar un caso de uso
 

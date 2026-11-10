@@ -61,7 +61,7 @@ PAGO también declara `(id, socio_id)` como único, aunque `id` ya lo es, solo p
 
 | Tipo | Restricción |
 |---|---|
-| Dominio | `telefono` de SOCIO: 10 dígitos; `duracion_dias > 0`; precios, montos y totales `>= 0`; `minimo >= 0`; `cantidad > 0` en DETALLE_VENTA; `dias_aviso >= 0`; `dias_baja_automatica > 0` |
+| Dominio | `telefono` de SOCIO: 10 dígitos; `duracion_dias > 0`; precios, montos y totales `>= 0`; `minimo >= 0`; `cantidad > 0` en DETALLE_VENTA; `dias_aviso` de 1 a 60; `dias_baja_automatica` de 1 a 365; `prefijo` de FOLIO_SECUENCIA de 1 a 8 mayúsculas, números o guiones |
 | Tupla | `fecha_vencimiento > fecha_inicio`; `efectivo_recibido >= monto` (PAGO) y `>= total` (VENTA); en MOVIMIENTO_INVENTARIO, `cantidad <> 0`, `entrada` con cantidad positiva y `salida` con negativa, y al menos uno de `motivo_movimiento_id` o `detalle_venta_id` |
 | Relación | CONFIGURACION tiene una sola tupla (`id = 1`) |
 | Operación | PAGO, MEMBRESIA, VENTA, DETALLE_VENTA y MOVIMIENTO_INVENTARIO no admiten `DELETE` (trigger) |
@@ -119,10 +119,10 @@ Una sola fila (`CHECK (id = 1)`) con los parámetros del gimnasio.
 | `direccion` | `varchar(200)` | |
 | `telefono` | `varchar(30)` | |
 | `logotipo` | `bytea` | se imprime en recibos y tickets |
-| `leyenda_recibo` | `varchar(200)` | pie de recibos y tickets |
+| `leyenda_recibo` | `varchar(160)` | pie de recibos y tickets |
 | `moneda` | `char(3)` | obligatorio, `MXN` por defecto; no se cambia si ya hay cobros o ventas |
-| `dias_aviso` | `integer` | obligatorio, 7 por defecto, `>= 0` |
-| `dias_baja_automatica` | `integer` | obligatorio, 30 por defecto, `> 0`; cambiarlo recalcula las bajas anteriores |
+| `dias_aviso` | `integer` | obligatorio, 7 por defecto, de 1 a 60 |
+| `dias_baja_automatica` | `integer` | obligatorio, 30 por defecto, de 1 a 365; cambiarlo recalcula las bajas anteriores |
 
 ### `folio_secuencia`
 
@@ -131,13 +131,13 @@ Un contador por serie de folios.
 | Columna | Tipo | Reglas |
 |---|---|---|
 | `serie` | `varchar(10)` | PK: `COBRO` o `VENTA` |
-| `prefijo` | `varchar(20)` | obligatorio, por ejemplo `GYM-` |
+| `prefijo` | `varchar(20)` | obligatorio, de 1 a 8 letras mayúsculas, números o guiones, por ejemplo `GYM-` |
 | `ultimo` | `bigint` | último número entregado, 0 al inicio |
 | `ancho` | `smallint` | dígitos con ceros a la izquierda, 4 por defecto; un número más largo se escribe completo, sin cortarse |
 
 El siguiente folio se toma con `UPDATE folio_secuencia SET ultimo = ultimo + 1 WHERE serie = ... RETURNING ...`, dentro de la misma transacción del cobro o la venta (función `siguiente_folio`). Así dos cajas nunca reciben el mismo número. Nunca se calcula con `MAX(folio) + 1`.
 
-Para usar una sola numeración en cobros y ventas, ambos procesos piden la misma serie.
+Para usar una sola numeración en cobros y ventas, ambos procesos piden la misma serie. En la fase 1 solo existe la serie `COBRO`; su prefijo es el que se edita en Configuración.
 
 ## Usuarios
 
@@ -157,11 +157,21 @@ Para usar una sola numeración en cobros y ventas, ambos procesos piden la misma
 | Tabla | Columnas propias | Reglas |
 |---|---|---|
 | `plan_membresia` | `nombre varchar(60)`, `duracion_dias integer`, `precio numeric(12,2)` | nombre único; `duracion_dias > 0`; `precio >= 0`. Los descuentos son planes propios, por ejemplo Estudiante |
-| `metodo_pago` | `nombre varchar(40)`, `es_efectivo boolean` | nombre único. Con `es_efectivo` se pide lo recibido y se calcula el cambio |
+| `metodo_pago` | `nombre varchar(40)`, `es_efectivo boolean` | nombre único sin distinguir mayúsculas (índice sobre `lower(nombre)`). Con `es_efectivo` se pide lo recibido y se calcula el cambio |
 | `motivo_movimiento` | `nombre varchar(60)`, `es_sistema boolean` | nombre único. Los de sistema, como "Existencia inicial", los usa el propio sistema |
 | `categoria_producto` | `nombre varchar(60)` | nombre único |
 
 Todas tienen `id bigint` como PK y `activo boolean` (`true` por defecto).
+
+## Datos iniciales
+
+La migración `V2__configuracion_inicial.sql` deja la base lista para usarse; el Administrador los cambia después.
+
+| Tabla | Datos |
+|---|---|
+| `configuracion` | nombre «Mi gimnasio», `MXN`, 7 días de aviso, 30 de plazo de baja |
+| `folio_secuencia` | serie `COBRO`, prefijo `GYM-`, ancho 4 |
+| `metodo_pago` | Efectivo (`es_efectivo`), Tarjeta, Transferencia |
 
 ## Socios y membresías
 

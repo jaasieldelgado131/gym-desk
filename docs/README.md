@@ -9,8 +9,8 @@ Arquitectura por capas (hexagonal): el dominio es Java puro y no depende de nada
 | Capa | Estado |
 |---|---|
 | `domain` | Entidades, value objects y reglas creados a partir de la especificación |
-| `application` | Caso de uso `Authenticate` con sus puertos `UserRepository` y `PasswordHasher` |
-| `infrastructure` | Conexión a PostgreSQL, migraciones, `PostgresUserRepository` y `Argon2PasswordHasher` |
+| `application` | `Authenticate`, `GetGymInfo`, `GetSettings`/`UpdateSettings` y el catálogo de métodos de pago; `Authorizer`, `ValidationException` y `NotFoundException` en `shared/` |
+| `infrastructure` | Conexión a PostgreSQL, migraciones (esquema y datos iniciales), repositorios de usuarios, configuración y métodos de pago, y `Argon2PasswordHasher` |
 | `ui` | Vacía (solo queda la plantilla `HelloApplication` de IntelliJ) |
 
 ## Modelo de datos
@@ -44,6 +44,7 @@ sistema-gimnasio/
     │   │   └── user/                    User, Role, Permission
     │   │
     │   ├── application/                 lo que el sistema hace
+    │   │   ├── shared/                  Authorizer, ValidationException, NotFoundException, CatalogItem, CatalogCommand
     │   │   ├── port/out/                (planeado) interfaces que la aplicación necesita del exterior
     │   │   │   ├── MemberRepository, MembershipPaymentRepository, SaleRepository
     │   │   │   ├── ProductRepository, UserRepository, SettingsRepository
@@ -68,7 +69,7 @@ sistema-gimnasio/
     │       └── common/                  navegación, diálogos, formatos, atajos     (planeado)
     │
     ├── main/resources/
-    │   ├── db/migration/                V1__esquema_inicial.sql (todo el modelo de datos)
+    │   ├── db/migration/                V1__esquema_inicial.sql (todo el modelo), V2__configuracion_inicial.sql (reglas y datos iniciales)
     │   ├── i18n/messages_es.properties  (planeado)
     │   └── fxml/   css/app.css   logback.xml   (planeado)
     │
