@@ -9,7 +9,7 @@ Arquitectura por capas (hexagonal): el dominio es Java puro y no depende de nada
 | Capa | Estado |
 |---|---|
 | `domain` | Entidades, value objects y reglas creados a partir de la especificación |
-| `application` | `Authenticate`, `GetGymInfo`, `GetSettings`/`UpdateSettings` y el catálogo de métodos de pago; `Authorizer`, `ValidationException` y `NotFoundException` en `shared/` |
+| `application` | `Authenticate`, `GetGymInfo`, `GetSettings`/`UpdateSettings`, el catálogo de métodos de pago y los planes (con su ahorro); `Authorizer`, `ValidationException` y `NotFoundException` en `shared/` |
 | `infrastructure` | Conexión a PostgreSQL, migraciones (esquema y datos iniciales), repositorios de usuarios, configuración y métodos de pago, y `Argon2PasswordHasher` |
 | `ui` | Vacía (solo queda la plantilla `HelloApplication` de IntelliJ) |
 
@@ -69,7 +69,7 @@ sistema-gimnasio/
     │       └── common/                  navegación, diálogos, formatos, atajos     (planeado)
     │
     ├── main/resources/
-    │   ├── db/migration/                V1__esquema_inicial.sql (todo el modelo), V2__configuracion_inicial.sql (reglas y datos iniciales)
+    │   ├── db/migration/                V1__esquema_inicial.sql (todo el modelo), V2__configuracion_inicial.sql (reglas y datos iniciales), V3__planes.sql (referencia mensual)
     │   ├── i18n/messages_es.properties  (planeado)
     │   └── fxml/   css/app.css   logback.xml   (planeado)
     │

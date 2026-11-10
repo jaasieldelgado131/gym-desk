@@ -7,7 +7,7 @@ ui ──(actor + command)──▶ caso de uso ──(puerto de salida)──�
    ◀──(resultado o excepción)──      ◀──────(datos)──────
 ```
 
-Están implementados `Authenticate`, `GetGymInfo`, Configuración y el catálogo de métodos de pago. El resto es el contrato acordado para construir la UI y los casos de uso en paralelo. Al final están los cambios que estos contratos piden al código actual.
+Están implementados `Authenticate`, `GetGymInfo`, Configuración, el catálogo de métodos de pago y Planes. El resto es el contrato acordado para construir la UI y los casos de uso en paralelo. Al final están los cambios que estos contratos piden al código actual.
 
 ## Reglas generales
 
@@ -158,7 +158,7 @@ Ahorro de un plan frente a pagar mes a mes con su plan mensual de referencia.
 | `referencePlanName` | `String` | *opcional* |
 | `monthlyTotal` | `Money` | *opcional*; precio de referencia × meses. |
 | `percent` | `Integer` | *opcional*; porcentaje ahorrado. |
-| `reason` | `String` | *opcional*; con `NO_DISPONIBLE`: «el plan no tiene un plan mensual de referencia», «el plan de referencia (Mensual) está inactivo» o «90 días no equivalen a meses completos». |
+| `reason` | `String` | *opcional*; con `NO_DISPONIBLE`: «el plan no tiene un plan mensual de referencia», «el plan de referencia (Mensual) está inactivo», «la referencia no dura 30 días» o «45 días no equivalen a meses completos». En la vista previa, sin precio: «escribe un precio mayor que cero para calcular el ahorro». |
 
 ### Elementos de catálogo
 
@@ -590,29 +590,43 @@ Permiso: `REGISTER_STOCK_MOVEMENT`.
 | `countedStock` | Escribe la existencia contada: un número entero, 0 o mayor. · La existencia contada es igual a la registrada; no hay nada que ajustar. |
 | `reasonId` | Elige el motivo. · Ese motivo ya no está disponible. |
 
-## Planes
+## Planes · *implementado*
 
 Permiso: `MANAGE_PLANS` en todos.
 
 | Caso de uso | Entrada | Salida |
 |---|---|---|
-| `ListPlans` | solo `actor` | `List<PlanRow>`: activos primero, luego por duración |
+| `ListPlans` | solo `actor` | `List<PlanRow>`: activos primero, luego por duración y por nombre |
 | `PreviewPlanSavings` | `PlanCommand` | `SavingsView`, para la vista previa del formulario |
 | `CreatePlan` | `PlanCommand` | `PlanRow` |
 | `UpdatePlan` | `long planId` + `PlanCommand` | `PlanRow` |
 | `SetPlanActive` | `long planId`, `boolean active` | `PlanRow` |
+| `DeletePlan` | `long planId` | nada |
 
 **`PlanRow`:** `id`, `name`, `durationDays`, `price`, `active`, `referenceMonthlyPlanId` (*opcional*), `referenceMonthlyPlanName` (*opcional*), `savings` (`SavingsView`).
 
-**`PlanCommand`:** `name`, `durationDays`, `price`, `referenceMonthlyPlanId` (*opcional*: plan de 30 días contra el que se calcula el ahorro).
+**`PlanCommand`:** `name`, `durationDays` (`Integer`), `price`, `referenceMonthlyPlanId` (*opcional*: plan de 30 días contra el que se calcula el ahorro; puede estar inactivo).
 
-Cambiar el precio aplica a los cobros nuevos; los anteriores conservan lo pagado. Un plan inactivo deja de ofrecerse pero se conserva en el historial.
+Cambiar el precio aplica a los cobros nuevos; los anteriores conservan lo pagado. Un plan inactivo deja de ofrecerse pero se conserva en el historial. `CreatePlan` deja el plan activo; `UpdatePlan` no cambia si está activo; `SetPlanActive` con el estado que ya tiene no hace nada. Los que escriben corren en una transacción.
+
+**Ahorro:** meses equivalentes = 12 para 365 días y días ÷ 30 para los múltiplos de 30; otras duraciones no tienen. `monthlyTotal` = precio de la referencia × meses; `percent` = ahorro × 100 / `monthlyTotal`, redondeado (,5 hacia arriba).
+
+**`PreviewPlanSavings`** nunca lanza por datos incompletos: sin duración o con 30 días o menos devuelve `NO_APLICA`; sin precio (o 0), `NO_DISPONIBLE`; una referencia que no existe cuenta como sin referencia.
+
+**`DeletePlan`** borra solo un plan que nadie usa (`DomainException`):
+
+| Situación | Mensaje |
+|---|---|
+| Ya tiene membresías | No puedes eliminar «Mensual»: ya tiene membresías. Desactívalo para dejar de ofrecerlo. |
+| Es referencia de otros planes | No puedes eliminar «Mensual»: es la referencia mensual de Anual, Trimestral. Cambia esa referencia antes. |
+
+Un id que ya no existe lanza `NotFoundException`: «El plan ya no existe. Recarga la pantalla.».
 
 **Errores** (`ValidationException`):
 
 | Campo | Mensaje |
 |---|---|
-| `name` | Escribe el nombre del plan. · Ya existe un plan con ese nombre. |
+| `name` | Escribe el nombre del plan. · Usa 60 caracteres o menos. · Ya existe un plan con ese nombre (sin distinguir mayúsculas). |
 | `durationDays` | Escribe la duración en días, de 1 a 730. |
 | `price` | Escribe un precio mayor que cero, por ejemplo 450.00. |
 | `referenceMonthlyPlanId` | Elige un plan de 30 días distinto de este. |
@@ -720,8 +734,9 @@ Los tres catálogos tienen los mismos cuatro casos de uso, cada uno con su comma
 | `CreatePaymentMethod` | `PaymentMethodCommand(name, cash)` | `PaymentMethodItem` |
 | `UpdatePaymentMethod` | `long id` + `PaymentMethodCommand` | `PaymentMethodItem` |
 | `SetPaymentMethodActive` | `long id`, `boolean active` | `PaymentMethodItem` |
+| `DeletePaymentMethod` | `long id` | nada |
 
-Motivos y categorías siguen la misma forma con `MovementReasonCommand(name)` / `ProductCategoryCommand(name)` y sus items. Crear, editar y activar corren cada uno en una transacción. El nombre se recorta y no puede repetirse sin distinguir mayúsculas, aunque el otro esté inactivo. `Create…` deja el elemento activo; `Update…` no cambia si está activo; `Set…Active` con el estado que ya tiene no hace nada. La lista va ordenada por nombre. Desactivar no cambia los registros anteriores.
+Motivos y categorías siguen la misma forma con `MovementReasonCommand(name)` / `ProductCategoryCommand(name)` y sus items. Crear, editar, activar y borrar corren cada uno en una transacción. Borrar solo se permite si el elemento nunca se usó; si ya se usó, se desactiva. El nombre se recorta y no puede repetirse sin distinguir mayúsculas, aunque el otro esté inactivo. `Create…` deja el elemento activo; `Update…` no cambia si está activo; `Set…Active` con el estado que ya tiene no hace nada. La lista va ordenada por nombre. Desactivar no cambia los registros anteriores.
 
 **Errores:**
 
@@ -732,6 +747,8 @@ Motivos y categorías siguen la misma forma con `MovementReasonCommand(name)` / 
 | Desactivar el último método de pago, motivo o categoría activos | `DomainException` | Deja al menos un método de pago. · Deja al menos un motivo. · Deja al menos una categoría. |
 | Desactivar una categoría con productos activos | `DomainException` | No puedes desactivar «Bebidas»: la usa Agua 1 L. Cambia su categoría antes. |
 | Editar o desactivar un motivo de sistema | `DomainException` | Los motivos del sistema no se pueden modificar. |
+| Borrar un método ya usado en cobros o ventas | `DomainException` | No puedes eliminar «Efectivo»: ya se usó en cobros o ventas. Desactívalo para dejar de ofrecerlo. |
+| Borrar el último método activo | `DomainException` | Deja al menos un método de pago. |
 
 ## Pendientes que afectan los contratos
 
@@ -747,8 +764,7 @@ Lo que hoy no coincide con los contratos y hay que ajustar al implementar cada c
 
 | Dónde | Cambio |
 |---|---|
-| Migración (`plan_membresia`) | Columna `referencia_mensual_id` (FK a `plan_membresia`, *opcional*). |
-| Precios de planes y productos | Mayores que cero (hoy `Money` y la base admiten 0). |
+| Precios de productos | Mayores que cero (hoy `Product` y la base admiten 0). |
 
 ## Puertos de salida implementados
 
@@ -819,8 +835,25 @@ Todo caso de uso que lea para decidir y luego escriba usa una transacción: `Upd
 | `int countActive()` | Métodos activos. |
 | `PaymentMethod insert(PaymentMethod method)` | Lo devuelve con su id. |
 | `void update(PaymentMethod method)` | Nombre, efectivo y activo. Lanza `IllegalStateException` si el id no existe. |
+| `boolean isUsed(long id)` | `true` si hay cobros o ventas con este método. |
+| `void delete(long id)` | Borra el método. |
 
 Implementación: `PostgresPaymentMethodRepository`.
+
+### `PlanRepository`
+
+| Método | Contrato |
+|---|---|
+| `List<Plan> findAll()` | Activos e inactivos, sin orden garantizado (el caso de uso ordena). |
+| `Optional<Plan> findById(long id)` | Vacío si no existe. |
+| `boolean existsByName(String name, Long excludeId)` | Sin distinguir mayúsculas; `excludeId` (opcional) no cuenta. |
+| `Plan insert(Plan plan)` | Lo devuelve con su id. |
+| `void update(Plan plan)` | Todos los campos. Lanza `IllegalStateException` si el id no existe. |
+| `boolean hasMemberships(long id)` | `true` si alguna membresía usa el plan. |
+| `List<String> namesReferencing(long id)` | Nombres de los planes que lo usan como referencia mensual, en orden alfabético. |
+| `void delete(long id)` | Borra el plan. |
+
+Implementación: `PostgresPlanRepository`.
 
 ### Permisos y reloj
 

@@ -61,7 +61,7 @@ PAGO también declara `(id, socio_id)` como único, aunque `id` ya lo es, solo p
 
 | Tipo | Restricción |
 |---|---|
-| Dominio | `telefono` de SOCIO: 10 dígitos; `duracion_dias > 0`; precios, montos y totales `>= 0`; `minimo >= 0`; `cantidad > 0` en DETALLE_VENTA; `dias_aviso` de 1 a 60; `dias_baja_automatica` de 1 a 365; `prefijo` de FOLIO_SECUENCIA de 1 a 8 mayúsculas, números o guiones |
+| Dominio | `telefono` de SOCIO: 10 dígitos; `duracion_dias` de 1 a 730; `precio` de PLAN_MEMBRESIA `> 0`; los demás precios, montos y totales `>= 0`; `minimo >= 0`; `cantidad > 0` en DETALLE_VENTA; `dias_aviso` de 1 a 60; `dias_baja_automatica` de 1 a 365; `prefijo` de FOLIO_SECUENCIA de 1 a 8 mayúsculas, números o guiones |
 | Tupla | `fecha_vencimiento > fecha_inicio`; `efectivo_recibido >= monto` (PAGO) y `>= total` (VENTA); en MOVIMIENTO_INVENTARIO, `cantidad <> 0`, `entrada` con cantidad positiva y `salida` con negativa, y al menos uno de `motivo_movimiento_id` o `detalle_venta_id` |
 | Relación | CONFIGURACION tiene una sola tupla (`id = 1`) |
 | Operación | PAGO, MEMBRESIA, VENTA, DETALLE_VENTA y MOVIMIENTO_INVENTARIO no admiten `DELETE` (trigger) |
@@ -91,7 +91,7 @@ Las relaciones están en tercera forma normal: cada atributo no clave depende so
 - **Claves primarias** `bigint` generadas por la base (`GENERATED ALWAYS AS IDENTITY`).
 - **Importes** en `numeric(12,2)`, nunca en `float`. La moneda es una sola para todo el sistema y vive en `configuracion`.
 - **Fechas**: `date` para vigencias y altas; `timestamptz` para cobros, ventas y movimientos.
-- **Catálogos** (`plan_membresia`, `metodo_pago`, `motivo_movimiento`, `categoria_producto`, `producto`, `usuario`) no se borran: se desactivan con `activo = false` para conservar el historial.
+- **Catálogos** (`plan_membresia`, `metodo_pago`, `motivo_movimiento`, `categoria_producto`, `producto`, `usuario`) se desactivan con `activo = false` para conservar el historial; solo se borra lo que nunca se usó (un plan sin membresías ni planes que lo tomen como referencia, un método de pago sin cobros ni ventas).
 - **Registros de operación** (`pago`, `membresia`, `venta`, `detalle_venta`, `movimiento_inventario`) nunca se borran; un trigger lo impide.
 - **Unicidad sin mayúsculas** en `usuario.nombre_usuario`, `socio.correo` y `producto.clave`: se indexa `lower(columna)`.
 
@@ -156,7 +156,7 @@ Para usar una sola numeración en cobros y ventas, ambos procesos piden la misma
 
 | Tabla | Columnas propias | Reglas |
 |---|---|---|
-| `plan_membresia` | `nombre varchar(60)`, `duracion_dias integer`, `precio numeric(12,2)` | nombre único; `duracion_dias > 0`; `precio >= 0`. Los descuentos son planes propios, por ejemplo Estudiante |
+| `plan_membresia` | `nombre varchar(60)`, `duracion_dias integer`, `precio numeric(12,2)`, `referencia_mensual_id bigint` | nombre único sin distinguir mayúsculas; `duracion_dias` de 1 a 730; `precio > 0`; `referencia_mensual_id` es FK opcional a otro plan (no a sí mismo), el de 30 días contra el que se calcula el ahorro. Los descuentos son planes propios, por ejemplo Estudiante |
 | `metodo_pago` | `nombre varchar(40)`, `es_efectivo boolean` | nombre único sin distinguir mayúsculas (índice sobre `lower(nombre)`). Con `es_efectivo` se pide lo recibido y se calcula el cambio |
 | `motivo_movimiento` | `nombre varchar(60)`, `es_sistema boolean` | nombre único. Los de sistema, como "Existencia inicial", los usa el propio sistema |
 | `categoria_producto` | `nombre varchar(60)` | nombre único |
