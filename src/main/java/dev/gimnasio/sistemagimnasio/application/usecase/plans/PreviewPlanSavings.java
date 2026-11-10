@@ -24,7 +24,7 @@ public final class PreviewPlanSavings {
     public SavingsView execute(User actor, PlanCommand command) {
         authorizer.require(actor, Permission.MANAGE_PLANS);
         int days = command.durationDays() == null ? 0 : command.durationDays();
-        if (days > Plan.MONTHLY_DAYS && !PlanRules.isPositive(command.price())) {
+        if (days > Plan.MONTHLY_DAYS && !Plan.isValidPrice(command.price())) {
             return SavingsView.of(PlanSavings.unavailable(PRICE_MISSING));
         }
         Plan reference = command.referenceMonthlyPlanId() == null

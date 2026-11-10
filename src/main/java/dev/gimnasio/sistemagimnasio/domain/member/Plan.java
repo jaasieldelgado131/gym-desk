@@ -16,19 +16,32 @@ public record Plan(Long id, String name, int durationDays, Money price, Long ref
             throw new DomainException("El nombre del plan es obligatorio.");
         }
         name = name.strip();
-        if (name.length() > MAX_NAME_LENGTH) {
+        if (!isValidName(name)) {
             throw new DomainException("El nombre del plan debe tener " + MAX_NAME_LENGTH + " caracteres o menos.");
         }
-        if (durationDays < MIN_DURATION_DAYS || durationDays > MAX_DURATION_DAYS) {
+        if (!isValidDuration(durationDays)) {
             throw new DomainException("La duración del plan debe estar entre " + MIN_DURATION_DAYS + " y "
                     + MAX_DURATION_DAYS + " días.");
         }
-        if (price == null || price.compareTo(Money.ZERO) <= 0) {
+        if (!isValidPrice(price)) {
             throw new DomainException("El precio del plan debe ser mayor que cero.");
         }
         if (id != null && id.equals(referenceMonthlyPlanId)) {
             throw new DomainException("Un plan no puede ser su propia referencia mensual.");
         }
+    }
+
+    /** El nombre ya recortado: no vacío y dentro del largo máximo. */
+    public static boolean isValidName(String name) {
+        return name != null && !name.isBlank() && name.length() <= MAX_NAME_LENGTH;
+    }
+
+    public static boolean isValidDuration(Integer days) {
+        return days != null && days >= MIN_DURATION_DAYS && days <= MAX_DURATION_DAYS;
+    }
+
+    public static boolean isValidPrice(Money price) {
+        return price != null && price.compareTo(Money.ZERO) > 0;
     }
 
     public Plan withActive(boolean active) {

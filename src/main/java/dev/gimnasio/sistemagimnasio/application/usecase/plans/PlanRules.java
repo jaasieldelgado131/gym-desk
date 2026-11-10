@@ -5,7 +5,6 @@ import dev.gimnasio.sistemagimnasio.application.shared.NotFoundException;
 import dev.gimnasio.sistemagimnasio.application.shared.ValidationException;
 import dev.gimnasio.sistemagimnasio.domain.member.Plan;
 import dev.gimnasio.sistemagimnasio.domain.member.PlanSavings;
-import dev.gimnasio.sistemagimnasio.domain.shared.Money;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -24,7 +23,6 @@ final class PlanRules {
     static final String REFERENCE_INVALID = "Elige un plan de " + Plan.MONTHLY_DAYS + " días distinto de este.";
     static final String NOT_FOUND = "El plan ya no existe. Recarga la pantalla.";
 
-
     private PlanRules() {
     }
 
@@ -39,16 +37,16 @@ final class PlanRules {
         Map<String, String> errors = new LinkedHashMap<>();
         if (name.isEmpty()) {
             errors.put("name", NAME_REQUIRED);
-        } else if (name.length() > Plan.MAX_NAME_LENGTH) {
+        } else if (!Plan.isValidName(name)) {
             errors.put("name", NAME_TOO_LONG);
         } else if (plans.existsByName(name, currentId)) {
             errors.put("name", NAME_TAKEN);
         }
         Integer days = command.durationDays();
-        if (days == null || days < Plan.MIN_DURATION_DAYS || days > Plan.MAX_DURATION_DAYS) {
+        if (!Plan.isValidDuration(days)) {
             errors.put("durationDays", DURATION_RANGE);
         }
-        if (!isPositive(command.price())) {
+        if (!Plan.isValidPrice(command.price())) {
             errors.put("price", PRICE_REQUIRED);
         }
         Long referenceId = command.referenceMonthlyPlanId();
@@ -63,10 +61,6 @@ final class PlanRules {
 
     static Plan find(PlanRepository plans, long id) {
         return plans.findById(id).orElseThrow(() -> new NotFoundException(NOT_FOUND));
-    }
-
-    static boolean isPositive(Money price) {
-        return price != null && price.compareTo(Money.ZERO) > 0;
     }
 
     static Map<Long, Plan> byId(PlanRepository plans) {

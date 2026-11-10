@@ -12,8 +12,13 @@ public record PaymentMethod(Long id, String name, boolean cash, boolean active) 
             throw new DomainException("El nombre es obligatorio.");
         }
         name = name.strip();
-        if (name.length() > MAX_NAME_LENGTH) {
+        if (!isValidName(name)) {
             throw new DomainException("El nombre debe tener " + MAX_NAME_LENGTH + " caracteres o menos.");
         }
+    }
+
+    /** El nombre ya recortado: no vacío y dentro del largo máximo. */
+    public static boolean isValidName(String name) {
+        return name != null && !name.isBlank() && name.length() <= MAX_NAME_LENGTH;
     }
 }

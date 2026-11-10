@@ -66,11 +66,11 @@ public final class UpdateSettings {
             if (gymName == null) {
                 errors.put("gymName", GYM_NAME_REQUIRED);
             } else {
-                checkLength(errors, "gymName", gymName, GymSettings.MAX_GYM_NAME_LENGTH);
+                checkFits(errors, "gymName", gymName, GymSettings.MAX_GYM_NAME_LENGTH);
             }
-            checkLength(errors, "address", address, GymSettings.MAX_ADDRESS_LENGTH);
-            checkLength(errors, "phone", phone, GymSettings.MAX_PHONE_LENGTH);
-            checkLength(errors, "receiptFooter", receiptFooter, GymSettings.MAX_RECEIPT_FOOTER_LENGTH);
+            checkFits(errors, "address", address, GymSettings.MAX_ADDRESS_LENGTH);
+            checkFits(errors, "phone", phone, GymSettings.MAX_PHONE_LENGTH);
+            checkFits(errors, "receiptFooter", receiptFooter, GymSettings.MAX_RECEIPT_FOOTER_LENGTH);
             if (command.logo() != null && !LogoFormat.isAccepted(command.logo())) {
                 errors.put("logo", LOGO_FORMAT);
             }
@@ -80,11 +80,10 @@ public final class UpdateSettings {
                 errors.put("currency", "No se puede cambiar: ya hay cobros o ventas registrados en "
                         + current.currency().getCurrencyCode() + ".");
             }
-            if (!inRange(command.warningDays(), GymSettings.MIN_WARNING_DAYS, GymSettings.MAX_WARNING_DAYS)) {
+            if (!GymSettings.isValidWarningDays(command.warningDays())) {
                 errors.put("warningDays", WARNING_DAYS_RANGE);
             }
-            if (!inRange(command.autoDeactivationDays(), GymSettings.MIN_AUTO_DEACTIVATION_DAYS,
-                    GymSettings.MAX_AUTO_DEACTIVATION_DAYS)) {
+            if (!GymSettings.isValidAutoDeactivationDays(command.autoDeactivationDays())) {
                 errors.put("autoDeactivationDays", AUTO_DEACTIVATION_DAYS_RANGE);
             }
             if (!FolioSeries.isValidPrefix(folioPrefix)) {
@@ -112,13 +111,9 @@ public final class UpdateSettings {
         return stripped.isEmpty() ? null : stripped;
     }
 
-    private static void checkLength(Map<String, String> errors, String field, String value, int max) {
-        if (value != null && value.length() > max) {
+    private static void checkFits(Map<String, String> errors, String field, String value, int max) {
+        if (!GymSettings.fits(value, max)) {
             errors.put(field, "Usa " + max + " caracteres o menos.");
         }
-    }
-
-    private static boolean inRange(Integer value, int min, int max) {
-        return value != null && value >= min && value <= max;
     }
 }

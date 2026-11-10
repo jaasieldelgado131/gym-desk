@@ -22,7 +22,7 @@ final class PaymentMethodRules {
         if (name.isEmpty()) {
             throw ValidationException.of("name", NAME_REQUIRED);
         }
-        if (name.length() > PaymentMethod.MAX_NAME_LENGTH) {
+        if (!PaymentMethod.isValidName(name)) {
             throw ValidationException.of("name", NAME_TOO_LONG);
         }
         if (methods.existsByName(name, excludeId)) {

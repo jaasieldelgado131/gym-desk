@@ -17,7 +17,7 @@ final class LogoFormat {
     }
 
     static boolean isAccepted(byte[] image) {
-        if (image == null || image.length == 0 || image.length > GymSettings.MAX_LOGO_BYTES) {
+        if (image == null || image.length == 0 || !GymSettings.isValidLogoSize(image)) {
             return false;
         }
         return startsWith(image, 0, PNG)

@@ -36,29 +36,46 @@ public record GymSettings(
         if (gymName == null || gymName.isBlank()) {
             throw new DomainException("El nombre del gimnasio es obligatorio.");
         }
-        requireMaxLength("El nombre del gimnasio", gymName, MAX_GYM_NAME_LENGTH);
-        requireMaxLength("La dirección", address, MAX_ADDRESS_LENGTH);
-        requireMaxLength("El teléfono", phone, MAX_PHONE_LENGTH);
-        requireMaxLength("La leyenda del recibo", receiptFooter, MAX_RECEIPT_FOOTER_LENGTH);
-        if (logo != null && logo.length > MAX_LOGO_BYTES) {
+        requireFits("El nombre del gimnasio", gymName, MAX_GYM_NAME_LENGTH);
+        requireFits("La dirección", address, MAX_ADDRESS_LENGTH);
+        requireFits("El teléfono", phone, MAX_PHONE_LENGTH);
+        requireFits("La leyenda del recibo", receiptFooter, MAX_RECEIPT_FOOTER_LENGTH);
+        if (!isValidLogoSize(logo)) {
             throw new DomainException("El logotipo debe pesar " + MAX_LOGO_BYTES / 1024 + " KB o menos.");
         }
         if (currency == null) {
             throw new DomainException("La moneda es obligatoria.");
         }
-        if (warningDays < MIN_WARNING_DAYS || warningDays > MAX_WARNING_DAYS) {
+        if (!isValidWarningDays(warningDays)) {
             throw new DomainException("Los días de aviso deben estar entre " + MIN_WARNING_DAYS + " y "
                     + MAX_WARNING_DAYS + ".");
         }
-        if (autoDeactivationDays < MIN_AUTO_DEACTIVATION_DAYS || autoDeactivationDays > MAX_AUTO_DEACTIVATION_DAYS) {
+        if (!isValidAutoDeactivationDays(autoDeactivationDays)) {
             throw new DomainException("El plazo de baja automática debe estar entre " + MIN_AUTO_DEACTIVATION_DAYS
                     + " y " + MAX_AUTO_DEACTIVATION_DAYS + " días.");
         }
         logo = logo == null ? null : logo.clone();
     }
 
-    private static void requireMaxLength(String field, String value, int max) {
-        if (value != null && value.length() > max) {
+    /** Un texto opcional (null) o de {@code max} caracteres o menos. */
+    public static boolean fits(String value, int max) {
+        return value == null || value.length() <= max;
+    }
+
+    public static boolean isValidLogoSize(byte[] logo) {
+        return logo == null || logo.length <= MAX_LOGO_BYTES;
+    }
+
+    public static boolean isValidWarningDays(Integer days) {
+        return days != null && days >= MIN_WARNING_DAYS && days <= MAX_WARNING_DAYS;
+    }
+
+    public static boolean isValidAutoDeactivationDays(Integer days) {
+        return days != null && days >= MIN_AUTO_DEACTIVATION_DAYS && days <= MAX_AUTO_DEACTIVATION_DAYS;
+    }
+
+    private static void requireFits(String field, String value, int max) {
+        if (!fits(value, max)) {
             throw new DomainException(field + " debe tener " + max + " caracteres o menos.");
         }
     }
