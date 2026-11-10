@@ -30,6 +30,32 @@ Reglas que siguen todas las pantallas:
 - Los errores se tratan como dice el contrato: `ValidationException` marca cada campo (en el orden en que se validaron, el foco va al primero), `NotFoundException` avisa y recarga, `DomainException` muestra el mensaje tal cual y cualquier otro error muestra un mensaje genérico y se registra.
 - La UI no calcula vigencias, totales ni estados. `Inputs` solo convierte texto: lo que no puede leer (por ejemplo `450,50`, con coma decimal) lo envía como `null` y el caso de uso responde con su propio mensaje.
 
+## Tema y recursos visuales
+
+`resources/css/app.css` traslada los tokens del prototipo: los colores se definen una vez como colores con nombre (`-gd-*`), el tema claro en `.root` y el nocturno en `.tema-oscuro`. `ui.common.Themes` pone la clase del tema en la raíz de cada ventana, incluidos los diálogos (cada uno tiene su propia escena); los menús y listas desplegables toman los colores del control que los abre.
+
+| Tema | Estado |
+|---|---|
+| Claro | Disponible. Es el predeterminado. |
+| Nocturno | Disponible. |
+| Según el sistema | **Pendiente.** JavaFX 21 no informa si el sistema operativo está en modo oscuro; la API `Platform.Preferences` llegó en JavaFX 22. Actualizar JavaFX es un cambio de `pom.xml`, fuera de la rama de UI. Mientras tanto el selector ofrece solo claro y nocturno. |
+
+El tema elegido se recuerda en las preferencias del usuario del sistema operativo (`java.util.prefs`, nodo `dev/gimnasio/sistemagimnasio/ui`), no en la base: es una preferencia de cada equipo.
+
+Diferencias deliberadas con el prototipo:
+
+- **Sin vidrio esmerilado.** JavaFX no tiene `backdrop-filter`. Menú, cápsulas y marcos son superficies opacas, como la variante «transparencia reducida» del propio prototipo; se conservan el fondo con color y la rejilla tenue.
+- **Tamaños escritos en cada regla.** El CSS de JavaFX solo admite colores con nombre, no variables de tamaño; radios (14, 10, 7), espacios y tamaños de texto (11.5 a 30 px) se copian del prototipo en cada regla.
+- **Pesos por familia.** JavaFX solo distingue normal y negrita al buscar una fuente por peso, así que los pesos 500 y 600 se piden por familia: `Instrument Sans Medium` y `Instrument Sans SemiBold` (clases `peso-500` y `peso-600`).
+- **Pantalla mínima de 1024 × 680.** La app es de escritorio; el menú desplegable y las tablas con desplazamiento de la vista estrecha del prototipo no aplican.
+
+### Recursos de terceros
+
+| Recurso | Dónde | Licencia | Origen |
+|---|---|---|---|
+| Instrument Sans 400, 500, 600 y 700 | `resources/fonts/` | SIL Open Font License 1.1 (`fonts/OFL.txt`), sin nombres reservados | Fuente variable de [google/fonts](https://github.com/google/fonts/tree/main/ofl/instrumentsans). Los cortes estáticos se generaron con `fontTools.varLib.instancer` (`wght=400…700`, `wdth=100`, `--update-name-table`), porque JavaFX no maneja ejes variables. |
+| Iconos Lucide (29) | `resources/icons/lucide.properties` | ISC (`icons/LICENSE-lucide.txt`, que incluye la nota MIT de Feather) | Los mismos símbolos del prototipo. `rect` y `circle` se convirtieron a trazos y los subtrazos se unieron en un solo `SVGPath` por icono. |
+
 ## Ejecutar
 
 ```bash
@@ -53,6 +79,14 @@ Las pruebas de `infrastructure/persistence` levantan PostgreSQL con Testcontaine
 
 La solución permanente es actualizar Testcontainers en `pom.xml`, fuera del alcance de la rama de UI.
 
+### Capturas
+
+`CapturasUiTest` abre la UI real con casos de uso sobre repositorios en memoria (sin base), guarda capturas en ambos temas a 1200 × 760 y 1024 × 680 en `target/capturas/` y revisa el orden del foco con el teclado. Necesita pantalla, así que no corre con `./mvnw test`:
+
+```bash
+./mvnw test -Dtest=CapturasUiTest -Dui.capturas=true
+```
+
 ## Validación por entrega
 
 ### Fase 0 · Arranque (10/11/2026)
@@ -67,3 +101,13 @@ Con JDK 26.0.2, Docker 29.0.3 y PostgreSQL 16 de `docker-compose.yml`:
 | Arranque con la base | Aplica V1–V3 en una base vacía y muestra el nombre del gimnasio y la fecha |
 | Arranque sin `DB_PASSWORD` | Muestra «Falta la variable de entorno DB_PASSWORD.» con «Reintentar» y «Salir» |
 | Cierre durante una conexión que no responde (servidor que acepta TCP y no contesta) | `stop()` termina en 1 ms; antes de la corrección esperaba a que fallara la conexión |
+
+### Fase 1 · Entrega 1: base visual y vista de acceso (10/11/2026)
+
+| Comprobación | Resultado |
+|---|---|
+| Pruebas de `ui/common` | 61: las de la Fase 0 más `ThemesTest` (predeterminado, recordado, valor desconocido, fallo al guardar) y `BrandAndIconsTest` (iniciales, iconos usados, licencias incluidas) |
+| Capturas del acceso | `acceso-{claro,oscuro}-{1200,1024}.png` |
+| Capturas de los 29 iconos | `iconos-{claro,oscuro}.png`: se revisaron uno por uno contra el prototipo |
+| Teclado en el acceso | Al abrir, el foco está en Usuario. Tab: Usuario → Contraseña → Entrar → selector de tema → Usuario. El selector es un grupo de opciones: las flechas cambian de tema, Espacio no quita el elegido |
+| Entrar | Todavía sin acción: se conecta en la entrega 2 |

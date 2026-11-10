@@ -29,8 +29,7 @@ public final class Dialogs {
         alert.initOwner(owner);
         alert.setTitle(title);
         alert.setHeaderText(null);
-        if (owner != null && owner.getScene() != null) {
-            alert.getDialogPane().getStylesheets().addAll(owner.getScene().getStylesheets());
-        }
+        // El tema lo pone Themes al abrirse la ventana del diálogo.
+        alert.getDialogPane().getStylesheets().add(AppWindow.stylesheet());
     }
 }
