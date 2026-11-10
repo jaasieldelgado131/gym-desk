@@ -3,7 +3,7 @@ package dev.gimnasio.sistemagimnasio.application.usecase.authenticate;
 import dev.gimnasio.sistemagimnasio.application.port.out.PasswordHasher;
 import dev.gimnasio.sistemagimnasio.application.port.out.UserCredentials;
 import dev.gimnasio.sistemagimnasio.application.port.out.UserRepository;
-import dev.gimnasio.sistemagimnasio.domain.shared.DomainException;
+import dev.gimnasio.sistemagimnasio.application.shared.ValidationException;
 import dev.gimnasio.sistemagimnasio.domain.user.Role;
 import dev.gimnasio.sistemagimnasio.domain.user.User;
 import org.junit.jupiter.api.Test;
@@ -11,6 +11,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -92,7 +93,8 @@ class AuthenticateTest {
     @Test
     void contrasenaIncorrecta_seRechazaConMensajeClaro() {
         register("lucia", "Mostrador#2026", Role.CAJA, true);
-        assertEquals(Authenticate.INVALID_CREDENTIALS, rejection("lucia", "mostrador#2026"));
+        assertEquals("Usuario o contraseña incorrectos. Revísalos e inténtalo de nuevo.",
+                rejection("lucia", "mostrador#2026"));
     }
 
     /** Así no se puede averiguar qué usuarios existen probando nombres. */
@@ -122,21 +124,36 @@ class AuthenticateTest {
         assertEquals(Authenticate.INVALID_CREDENTIALS, rejection("lucia", storedHash));
     }
 
+    private Map<String, String> missing(String username, String password) {
+        return assertThrows(ValidationException.class,
+                () -> authenticate.execute(new AuthenticateCommand(username, password))).errors();
+    }
+
     @ParameterizedTest
-    @CsvSource(value = {"NULL, clave", "'', clave", "'   ', clave", "lucia, NULL", "lucia, ''"}, nullValues = "NULL")
-    void datosVacios_sePidenSinConsultarAlRepositorio(String username, String password) {
-        register("lucia", "Mostrador#2026", Role.CAJA, true);
-        assertEquals(Authenticate.MISSING_DATA, rejection(username, password));
+    @CsvSource(value = {"NULL", "''", "'   '"}, nullValues = "NULL")
+    void usuarioVacio_sePideEnSuCampoSinConsultarAlRepositorio(String username) {
+        assertEquals(Map.of("username", Authenticate.MISSING_USERNAME), missing(username, "clave"));
         assertEquals(0, users.lookups);
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {"NULL", "''"}, nullValues = "NULL")
+    void contrasenaVacia_sePideEnSuCampoSinConsultarAlRepositorio(String password) {
+        assertEquals(Map.of("password", Authenticate.MISSING_PASSWORD), missing("lucia", password));
+        assertEquals(0, users.lookups);
+    }
+
+    @Test
+    void ambosVacios_sePidenJuntos() {
+        assertEquals(List.of("username", "password"), List.copyOf(missing(" ", "").keySet()));
     }
 
 
     @Test
     void usuarioDesactivadoConContrasenaCorrecta_noEntra_ySeLeDiceElMotivo() {
         register("pedro", "Recepcion#2026", Role.ADMINISTRADOR, false);
-        DomainException e = assertThrows(DomainException.class,
-                () -> authenticate.execute(new AuthenticateCommand("pedro", "Recepcion#2026")));
-        assertEquals("El usuario está desactivado.", e.getMessage());
+        assertEquals("Tu usuario está desactivado. Pide a un administrador que lo active.",
+                rejection("pedro", "Recepcion#2026"));
     }
 
     /** Sin la contraseña correcta no se revela que la cuenta existe. */
