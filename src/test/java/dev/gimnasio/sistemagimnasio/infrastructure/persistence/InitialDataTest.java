@@ -51,7 +51,7 @@ class InitialDataTest {
         assertEquals("COBRO", row.get("serie"));
         assertEquals("GYM-", row.get("prefijo"));
         assertEquals(0L, row.get("ultimo"));
-        assertEquals((short) 4, row.get("ancho"));
+        assertEquals(4, ((Number) row.get("ancho")).intValue());
     }
 
     @Test
