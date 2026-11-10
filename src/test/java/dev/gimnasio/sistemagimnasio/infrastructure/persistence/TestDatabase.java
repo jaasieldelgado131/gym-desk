@@ -17,6 +17,7 @@ final class TestDatabase {
     static final String FOREIGN_KEY_VIOLATION = "23503";
     static final String UNIQUE_VIOLATION = "23505";
     static final String INVALID_ENUM_VALUE = "22P02";
+    static final String STRING_TOO_LONG = "22001";
 
     private static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16");
     private static HikariDataSource dataSource;
@@ -35,6 +36,17 @@ final class TestDatabase {
             dataSource = connected;
         }
         return dataSource;
+    }
+
+    /** Una base vacía en el mismo contenedor, sin migrar; para probar lo que dejan las migraciones. */
+    static DatabaseConfig newEmptyDatabase(String name) {
+        dataSource();
+        jdbi.useHandle(handle -> {
+            handle.execute("DROP DATABASE IF EXISTS " + name);
+            handle.execute("CREATE DATABASE " + name);
+        });
+        String url = POSTGRES.getJdbcUrl().replaceFirst("/[^/?]+(\\?|$)", "/" + name + "$1");
+        return new DatabaseConfig(url, POSTGRES.getUsername(), POSTGRES.getPassword());
     }
 
     static Jdbi jdbi() {

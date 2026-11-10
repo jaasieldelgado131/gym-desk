@@ -2,6 +2,8 @@ package dev.gimnasio.sistemagimnasio.domain.settings;
 
 import dev.gimnasio.sistemagimnasio.domain.shared.DomainException;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Currency;
 
@@ -23,17 +25,40 @@ class GymSettingsTest {
         assertEquals(30, GymSettings.DEFAULT_GRACE_DAYS);
     }
 
-    @Test
-    void plazoDeBaja_debeSerDeAlMenosUnDia() {
-        assertEquals(1, settings("Gym", MXN, 7, 1, "GYM-").graceDays());
-        assertThrows(DomainException.class, () -> settings("Gym", MXN, 7, 0, "GYM-"));
-        assertThrows(DomainException.class, () -> settings("Gym", MXN, 7, -30, "GYM-"));
+    @ParameterizedTest
+    @ValueSource(ints = {1, 60})
+    void diasDeAviso_de1a60_seAceptan(int days) {
+        assertEquals(days, settings("Gym", MXN, days, 30, "GYM-").warningDays());
     }
 
-    @Test
-    void diasDeAviso_puedenSerCero_peroNoNegativos() {
-        assertEquals(0, settings("Gym", MXN, 0, 30, "GYM-").warningDays());
-        assertThrows(DomainException.class, () -> settings("Gym", MXN, -1, 30, "GYM-"));
+    @ParameterizedTest
+    @ValueSource(ints = {-1, 0, 61})
+    void diasDeAviso_fueraDe1a60_seRechazan(int days) {
+        assertThrows(DomainException.class, () -> settings("Gym", MXN, days, 30, "GYM-"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 365})
+    void plazoDeBaja_de1a365_seAcepta(int days) {
+        assertEquals(days, settings("Gym", MXN, 7, days, "GYM-").graceDays());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {-30, 0, 366})
+    void plazoDeBaja_fueraDe1a365_seRechaza(int days) {
+        assertThrows(DomainException.class, () -> settings("Gym", MXN, 7, days, "GYM-"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"G", "GYM-", "GYM-V-", "ABCD1234", "2026-"})
+    void prefijo_de1a8MayusculasNumerosOGuiones_seAcepta(String prefix) {
+        assertEquals(prefix, settings("Gym", MXN, 7, 30, prefix).folioPrefix());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"gym-", "GYM_", "GYM 1", "ABCDE1234", "ÑU-"})
+    void prefijo_conOtrosCaracteresOMasDe8_seRechaza(String prefix) {
+        assertThrows(DomainException.class, () -> settings("Gym", MXN, 7, 30, prefix));
     }
 
     @Test

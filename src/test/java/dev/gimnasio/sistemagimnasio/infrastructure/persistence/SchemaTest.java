@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 
 import static dev.gimnasio.sistemagimnasio.infrastructure.persistence.TestDatabase.CHECK_VIOLATION;
 import static dev.gimnasio.sistemagimnasio.infrastructure.persistence.TestDatabase.FOREIGN_KEY_VIOLATION;
+import static dev.gimnasio.sistemagimnasio.infrastructure.persistence.TestDatabase.STRING_TOO_LONG;
 import static dev.gimnasio.sistemagimnasio.infrastructure.persistence.TestDatabase.UNIQUE_VIOLATION;
 import static dev.gimnasio.sistemagimnasio.infrastructure.persistence.TestDatabase.assertRejected;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -64,11 +65,39 @@ class SchemaTest {
         assertRejected(CHECK_VIOLATION, () -> execute("INSERT INTO configuracion (id, nombre_gimnasio) VALUES (2, 'Otro')"));
     }
 
+    @ParameterizedTest
+    @ValueSource(ints = {0, 61})
+    void configuracion_diasDeAvisoFueraDe1a60_seRechazan(int dias) {
+        assertRejected(CHECK_VIOLATION, () -> execute("INSERT INTO configuracion (nombre_gimnasio, dias_aviso) VALUES ('Gym', " + dias + ")"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 366})
+    void configuracion_plazoDeBajaFueraDe1a365_seRechaza(int dias) {
+        assertRejected(CHECK_VIOLATION, () -> execute("INSERT INTO configuracion (nombre_gimnasio, dias_baja_automatica) VALUES ('Gym', " + dias + ")"));
+    }
+
     @Test
-    void configuracion_plazoDeBajaYDiasDeAviso_validos() {
-        assertRejected(CHECK_VIOLATION, () -> execute("INSERT INTO configuracion (nombre_gimnasio, dias_baja_automatica) VALUES ('Gym', 0)"));
-        assertRejected(CHECK_VIOLATION, () -> execute("INSERT INTO configuracion (nombre_gimnasio, dias_aviso) VALUES ('Gym', -1)"));
-        assertDoesNotThrow(() -> execute("INSERT INTO configuracion (nombre_gimnasio, dias_aviso) VALUES ('Gym', 0)"));
+    void configuracion_admiteLosLimites() {
+        assertDoesNotThrow(() -> execute("INSERT INTO configuracion (nombre_gimnasio, dias_aviso, dias_baja_automatica) VALUES ('Gym', 60, 365)"));
+        assertDoesNotThrow(() -> execute("UPDATE configuracion SET dias_aviso = 1, dias_baja_automatica = 1"));
+    }
+
+    @Test
+    void configuracion_leyendaDeMasDe160Caracteres_seRechaza() {
+        assertRejected(STRING_TOO_LONG, () -> execute("INSERT INTO configuracion (nombre_gimnasio, leyenda_recibo) VALUES ('Gym', '" + "x".repeat(161) + "')"));
+        assertDoesNotThrow(() -> execute("INSERT INTO configuracion (nombre_gimnasio, leyenda_recibo) VALUES ('Gym', '" + "x".repeat(160) + "')"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "gym-", "GYM_", "GYM-COBRO"})
+    void prefijoDeFolioInvalido_seRechaza(String prefijo) {
+        assertRejected(CHECK_VIOLATION, () -> execute("INSERT INTO folio_secuencia (serie, prefijo) VALUES ('COBRO', '" + prefijo + "')"));
+    }
+
+    @Test
+    void metodoDePagoRepetido_aunqueCambienLasMayusculas_seRechaza() {
+        assertRejected(UNIQUE_VIOLATION, () -> execute("INSERT INTO metodo_pago (nombre) VALUES ('EFECTIVO')"));
     }
 
     // ---------- Socios ----------

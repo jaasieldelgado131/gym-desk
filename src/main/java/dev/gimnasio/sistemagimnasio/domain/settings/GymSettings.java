@@ -3,6 +3,7 @@ package dev.gimnasio.sistemagimnasio.domain.settings;
 import dev.gimnasio.sistemagimnasio.domain.shared.DomainException;
 
 import java.util.Currency;
+import java.util.regex.Pattern;
 
 /**
  * Que la moneda no cambie si ya hay cobros o ventas lo valida la capa de aplicación.
@@ -21,6 +22,9 @@ public record GymSettings(
 
     public static final int DEFAULT_WARNING_DAYS = 7;
     public static final int DEFAULT_GRACE_DAYS = 30;
+    public static final int MAX_WARNING_DAYS = 60;
+    public static final int MAX_GRACE_DAYS = 365;
+    private static final Pattern FOLIO_PREFIX = Pattern.compile("[A-Z0-9-]{1,8}");
 
     public GymSettings {
         if (gymName == null || gymName.isBlank()) {
@@ -29,14 +33,14 @@ public record GymSettings(
         if (currency == null) {
             throw new DomainException("La moneda es obligatoria.");
         }
-        if (warningDays < 0) {
-            throw new DomainException("Los días de aviso no pueden ser negativos.");
+        if (warningDays < 1 || warningDays > MAX_WARNING_DAYS) {
+            throw new DomainException("Los días de aviso deben estar entre 1 y 60.");
         }
-        if (graceDays < 1) {
-            throw new DomainException("El plazo de baja automática es obligatorio y debe ser de al menos 1 día.");
+        if (graceDays < 1 || graceDays > MAX_GRACE_DAYS) {
+            throw new DomainException("El plazo de baja automática debe estar entre 1 y 365 días.");
         }
-        if (folioPrefix == null || folioPrefix.isBlank()) {
-            throw new DomainException("El prefijo de folios es obligatorio.");
+        if (folioPrefix == null || !FOLIO_PREFIX.matcher(folioPrefix).matches()) {
+            throw new DomainException("El prefijo de folios debe tener de 1 a 8 letras mayúsculas, números o guiones.");
         }
         logo = logo == null ? null : logo.clone();
     }
