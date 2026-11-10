@@ -12,8 +12,6 @@ import java.util.Objects;
 import java.util.Optional;
 
 public final class PostgresPaymentMethodRepository implements PaymentMethodRepository {
-    private static final String COLUMNS = "SELECT id, nombre, es_efectivo, activo FROM metodo_pago";
-
     private final Jdbi jdbi;
 
     public PostgresPaymentMethodRepository(Jdbi jdbi) {
@@ -22,10 +20,12 @@ public final class PostgresPaymentMethodRepository implements PaymentMethodRepos
 
     @Override
     public List<PaymentMethod> findAll(boolean includeInactive) {
-        return jdbi.withHandle(handle -> handle.createQuery(COLUMNS + """
-
+        return jdbi.withHandle(handle -> handle.createQuery("""
+                        SELECT id, nombre, es_efectivo, activo
+                        FROM metodo_pago
                         WHERE activo OR :includeInactive
-                        ORDER BY lower(nombre), id""")
+                        ORDER BY lower(nombre), id
+                        """)
                 .bind("includeInactive", includeInactive)
                 .map(PostgresPaymentMethodRepository::map)
                 .list());
@@ -33,7 +33,11 @@ public final class PostgresPaymentMethodRepository implements PaymentMethodRepos
 
     @Override
     public Optional<PaymentMethod> findById(long id) {
-        return jdbi.withHandle(handle -> handle.createQuery(COLUMNS + " WHERE id = :id")
+        return jdbi.withHandle(handle -> handle.createQuery("""
+                        SELECT id, nombre, es_efectivo, activo
+                        FROM metodo_pago
+                        WHERE id = :id
+                        """)
                 .bind("id", id)
                 .map(PostgresPaymentMethodRepository::map)
                 .findOne());
@@ -43,8 +47,12 @@ public final class PostgresPaymentMethodRepository implements PaymentMethodRepos
     public boolean existsByName(String name, Long excludeId) {
         return jdbi.withHandle(handle -> handle.createQuery("""
                         SELECT EXISTS (
-                            SELECT 1 FROM metodo_pago
-                            WHERE lower(nombre) = lower(:nombre) AND (CAST(:excludeId AS bigint) IS NULL OR id <> CAST(:excludeId AS bigint)))""")
+                            SELECT 1
+                            FROM metodo_pago
+                            WHERE lower(nombre) = lower(:nombre)
+                              AND (CAST(:excludeId AS bigint) IS NULL OR id <> CAST(:excludeId AS bigint))
+                        )
+                        """)
                 .bind("nombre", name)
                 .bind("excludeId", excludeId)
                 .mapTo(Boolean.class)
@@ -53,7 +61,11 @@ public final class PostgresPaymentMethodRepository implements PaymentMethodRepos
 
     @Override
     public int countActive() {
-        return jdbi.withHandle(handle -> handle.createQuery("SELECT count(*) FROM metodo_pago WHERE activo")
+        return jdbi.withHandle(handle -> handle.createQuery("""
+                        SELECT count(*)
+                        FROM metodo_pago
+                        WHERE activo
+                        """)
                 .mapTo(Integer.class)
                 .one());
     }
@@ -61,7 +73,9 @@ public final class PostgresPaymentMethodRepository implements PaymentMethodRepos
     @Override
     public PaymentMethod insert(PaymentMethod method) {
         long id = jdbi.withHandle(handle -> handle.createUpdate("""
-                        INSERT INTO metodo_pago (nombre, es_efectivo, activo) VALUES (:nombre, :efectivo, :activo)""")
+                        INSERT INTO metodo_pago (nombre, es_efectivo, activo)
+                        VALUES (:nombre, :efectivo, :activo)
+                        """)
                 .bind("nombre", method.name())
                 .bind("efectivo", method.cash())
                 .bind("activo", method.active())
@@ -74,8 +88,12 @@ public final class PostgresPaymentMethodRepository implements PaymentMethodRepos
     @Override
     public void update(PaymentMethod method) {
         int updated = jdbi.withHandle(handle -> handle.createUpdate("""
-                        UPDATE metodo_pago SET nombre = :nombre, es_efectivo = :efectivo, activo = :activo
-                        WHERE id = :id""")
+                        UPDATE metodo_pago
+                        SET nombre      = :nombre,
+                            es_efectivo = :efectivo,
+                            activo      = :activo
+                        WHERE id = :id
+                        """)
                 .bind("id", method.id())
                 .bind("nombre", method.name())
                 .bind("efectivo", method.cash())
@@ -87,7 +105,10 @@ public final class PostgresPaymentMethodRepository implements PaymentMethodRepos
     }
 
     private static PaymentMethod map(ResultSet rs, StatementContext ctx) throws SQLException {
-        return new PaymentMethod(rs.getLong("id"), rs.getString("nombre"), rs.getBoolean("es_efectivo"),
+        return new PaymentMethod(
+                rs.getLong("id"),
+                rs.getString("nombre"),
+                rs.getBoolean("es_efectivo"),
                 rs.getBoolean("activo"));
     }
 }

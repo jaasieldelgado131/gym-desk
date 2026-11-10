@@ -26,7 +26,8 @@ public final class PostgresUserRepository implements UserRepository {
         return jdbi.withHandle(handle -> handle.createQuery("""
                         SELECT id, nombre, nombre_usuario, rol::text AS rol, activo, contrasena_hash
                         FROM usuario
-                        WHERE lower(nombre_usuario) = lower(:username)""")
+                        WHERE lower(nombre_usuario) = lower(:username)
+                        """)
                 .bind("username", username)
                 .map(PostgresUserRepository::mapCredentials)
                 .findOne());
@@ -37,7 +38,8 @@ public final class PostgresUserRepository implements UserRepository {
         return jdbi.withHandle(handle -> handle.createQuery("""
                         SELECT id, nombre, nombre_usuario, rol::text AS rol, activo
                         FROM usuario
-                        WHERE id = :id""")
+                        WHERE id = :id
+                        """)
                 .bind("id", id)
                 .map(PostgresUserRepository::mapUser)
                 .findOne());

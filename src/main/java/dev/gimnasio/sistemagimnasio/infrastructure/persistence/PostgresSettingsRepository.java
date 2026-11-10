@@ -20,11 +20,19 @@ public final class PostgresSettingsRepository implements SettingsRepository {
     @Override
     public GymSettings get() {
         return jdbi.withHandle(handle -> handle.createQuery("""
-                        SELECT c.nombre_gimnasio, c.direccion, c.telefono, c.logotipo, c.leyenda_recibo, c.moneda,
-                               c.dias_aviso, c.dias_baja_automatica, f.prefijo
+                        SELECT c.nombre_gimnasio,
+                               c.direccion,
+                               c.telefono,
+                               c.logotipo,
+                               c.leyenda_recibo,
+                               c.moneda,
+                               c.dias_aviso,
+                               c.dias_baja_automatica,
+                               f.prefijo
                         FROM configuracion c
                         JOIN folio_secuencia f ON f.serie = :serie
-                        WHERE c.id = 1""")
+                        WHERE c.id = 1
+                        """)
                 .bind("serie", SERIES)
                 .map((rs, ctx) -> new GymSettings(
                         rs.getString("nombre_gimnasio"),
@@ -45,10 +53,16 @@ public final class PostgresSettingsRepository implements SettingsRepository {
         jdbi.useTransaction(handle -> {
             int updated = handle.createUpdate("""
                             UPDATE configuracion
-                            SET nombre_gimnasio = :nombre, direccion = :direccion, telefono = :telefono,
-                                logotipo = :logotipo, leyenda_recibo = :leyenda, moneda = :moneda,
-                                dias_aviso = :aviso, dias_baja_automatica = :baja
-                            WHERE id = 1""")
+                            SET nombre_gimnasio      = :nombre,
+                                direccion            = :direccion,
+                                telefono             = :telefono,
+                                logotipo             = :logotipo,
+                                leyenda_recibo       = :leyenda,
+                                moneda               = :moneda,
+                                dias_aviso           = :aviso,
+                                dias_baja_automatica = :baja
+                            WHERE id = 1
+                            """)
                     .bind("nombre", settings.gymName())
                     .bind("direccion", settings.address())
                     .bind("telefono", settings.phone())
@@ -58,7 +72,11 @@ public final class PostgresSettingsRepository implements SettingsRepository {
                     .bind("aviso", settings.warningDays())
                     .bind("baja", settings.graceDays())
                     .execute();
-            int prefixUpdated = handle.createUpdate("UPDATE folio_secuencia SET prefijo = :prefijo WHERE serie = :serie")
+            int prefixUpdated = handle.createUpdate("""
+                            UPDATE folio_secuencia
+                            SET prefijo = :prefijo
+                            WHERE serie = :serie
+                            """)
                     .bind("prefijo", settings.folioPrefix())
                     .bind("serie", SERIES)
                     .execute();
@@ -70,7 +88,11 @@ public final class PostgresSettingsRepository implements SettingsRepository {
 
     @Override
     public int folioWidth() {
-        return jdbi.withHandle(handle -> handle.createQuery("SELECT ancho FROM folio_secuencia WHERE serie = :serie")
+        return jdbi.withHandle(handle -> handle.createQuery("""
+                        SELECT ancho
+                        FROM folio_secuencia
+                        WHERE serie = :serie
+                        """)
                 .bind("serie", SERIES)
                 .mapTo(Integer.class)
                 .findOne()
@@ -79,11 +101,21 @@ public final class PostgresSettingsRepository implements SettingsRepository {
 
     @Override
     public int countPayments() {
-        return jdbi.withHandle(handle -> handle.createQuery("SELECT count(*) FROM pago").mapTo(Integer.class).one());
+        return jdbi.withHandle(handle -> handle.createQuery("""
+                        SELECT count(*)
+                        FROM pago
+                        """)
+                .mapTo(Integer.class)
+                .one());
     }
 
     @Override
     public int countSales() {
-        return jdbi.withHandle(handle -> handle.createQuery("SELECT count(*) FROM venta").mapTo(Integer.class).one());
+        return jdbi.withHandle(handle -> handle.createQuery("""
+                        SELECT count(*)
+                        FROM venta
+                        """)
+                .mapTo(Integer.class)
+                .one());
     }
 }
