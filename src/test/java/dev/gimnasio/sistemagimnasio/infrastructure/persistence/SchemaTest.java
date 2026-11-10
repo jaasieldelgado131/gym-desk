@@ -100,6 +100,47 @@ class SchemaTest {
         assertRejected(UNIQUE_VIOLATION, () -> execute("INSERT INTO metodo_pago (nombre) VALUES ('EFECTIVO')"));
     }
 
+    // ---------- Planes ----------
+
+    @ParameterizedTest
+    @ValueSource(strings = {"0", "-1"})
+    void planConPrecioCeroONegativo_seRechaza(String precio) {
+        assertRejected(CHECK_VIOLATION, () -> execute(
+                "INSERT INTO plan_membresia (nombre, duracion_dias, precio) VALUES ('Gratis', 30, " + precio + ")"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 731})
+    void planConDuracionFueraDe1a730_seRechaza(int dias) {
+        assertRejected(CHECK_VIOLATION, () -> execute(
+                "INSERT INTO plan_membresia (nombre, duracion_dias, precio) VALUES ('Raro', " + dias + ", 100)"));
+    }
+
+    @Test
+    void planDe730Dias_seAcepta() {
+        assertDoesNotThrow(() -> execute("INSERT INTO plan_membresia (nombre, duracion_dias, precio) VALUES ('Bianual', 730, 7000)"));
+    }
+
+    @Test
+    void planQueSeReferenciaASiMismo_seRechaza() {
+        assertRejected(CHECK_VIOLATION, () -> execute(
+                "UPDATE plan_membresia SET referencia_mensual_id = id WHERE id = " + plan));
+    }
+
+    @Test
+    void referenciaAUnPlanInexistente_seRechaza_yAUnoExistenteSeAcepta() {
+        assertRejected(FOREIGN_KEY_VIOLATION, () -> execute(
+                "INSERT INTO plan_membresia (nombre, duracion_dias, precio, referencia_mensual_id) VALUES ('Anual', 365, 3800, 999)"));
+        assertDoesNotThrow(() -> execute(
+                "INSERT INTO plan_membresia (nombre, duracion_dias, precio, referencia_mensual_id) VALUES ('Anual', 365, 3800, " + plan + ")"));
+    }
+
+    @Test
+    void planRepetido_aunqueCambienLasMayusculas_seRechaza() {
+        assertRejected(UNIQUE_VIOLATION, () -> execute(
+                "INSERT INTO plan_membresia (nombre, duracion_dias, precio) VALUES ('MENSUAL', 30, 500)"));
+    }
+
     // ---------- Socios ----------
 
     @ParameterizedTest
