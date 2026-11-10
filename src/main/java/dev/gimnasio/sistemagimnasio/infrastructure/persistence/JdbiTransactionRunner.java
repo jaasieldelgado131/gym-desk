@@ -26,15 +26,19 @@ public final class JdbiTransactionRunner implements TransactionRunner {
 
     @Override
     public <T> T inTransaction(Supplier<T> work) {
-        for (int attempt = 1; ; attempt++) {
+        RuntimeException lastException = null;
+        for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             try {
                 return jdbi.inTransaction(TransactionIsolationLevel.SERIALIZABLE, handle -> work.get());
             } catch (RuntimeException e) {
-                if (attempt >= MAX_ATTEMPTS || !isRetryable(e)) {
+                if (!isRetryable(e)) {
                     throw e;
                 }
+                lastException = e;
             }
         }
+        throw new IllegalStateException("Se agotaron los " + MAX_ATTEMPTS
+                + " intentos de la transacción por conflictos con otra estación.", lastException);
     }
 
     private static boolean isRetryable(Throwable e) {
