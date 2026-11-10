@@ -125,6 +125,26 @@ class PaymentMethodsTest {
         }
 
         @Test
+        void unMetodoYaUsado_noCambiaSiEsEfectivo_niEnUnSentidoNiEnOtro() {
+            methods.markUsed(efectivo.id());
+            methods.markUsed(tarjeta.id());
+
+            assertEquals(Map.of("cash", "No puedes cambiar si «Efectivo» es efectivo: ya se usó en cobros o ventas. "
+                            + "Crea un método nuevo y desactiva este."),
+                    errors(() -> update.execute(admin, efectivo.id(), new PaymentMethodCommand("Efectivo", false))));
+            assertEquals(List.of("cash"), List.copyOf(
+                    errors(() -> update.execute(admin, tarjeta.id(), new PaymentMethodCommand("Tarjeta", true))).keySet()));
+            assertEquals(0, methods.writes);
+        }
+
+        @Test
+        void unMetodoYaUsado_siPuedeCambiarDeNombre() {
+            methods.markUsed(efectivo.id());
+            assertEquals(new PaymentMethodItem(efectivo.id(), "Efectivo (caja 1)", true, true),
+                    update.execute(admin, efectivo.id(), new PaymentMethodCommand("Efectivo (caja 1)", true)));
+        }
+
+        @Test
         void unIdQueNoExiste_seRechaza() {
             NotFoundException e = assertThrows(NotFoundException.class,
                     () -> update.execute(admin, 99, new PaymentMethodCommand("Otro", false)));

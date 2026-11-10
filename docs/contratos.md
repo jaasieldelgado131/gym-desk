@@ -747,6 +747,7 @@ Motivos y categorías siguen la misma forma con `MovementReasonCommand(name)` / 
 | Desactivar el último método de pago, motivo o categoría activos | `DomainException` | Deja al menos un método de pago. · Deja al menos un motivo. · Deja al menos una categoría. |
 | Desactivar una categoría con productos activos | `DomainException` | No puedes desactivar «Bebidas»: la usa Agua 1 L. Cambia su categoría antes. |
 | Editar o desactivar un motivo de sistema | `DomainException` | Los motivos del sistema no se pueden modificar. |
+| Cambiar «es efectivo» de un método ya usado en cobros o ventas | `ValidationException` (`cash`) | No puedes cambiar si «Efectivo» es efectivo: ya se usó en cobros o ventas. Crea un método nuevo y desactiva este. |
 | Borrar un método ya usado en cobros o ventas | `DomainException` | No puedes eliminar «Efectivo»: ya se usó en cobros o ventas. Desactívalo para dejar de ofrecerlo. |
 | Borrar el último método activo | `DomainException` | Deja al menos un método de pago. |
 
