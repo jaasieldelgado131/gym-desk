@@ -10,8 +10,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class MembershipTest {
-    private static final Plan MENSUAL = new Plan(1L, "Mensual", 30, Money.of("450"), true);
-    private static final Plan ANUAL = new Plan(4L, "Anual", 365, Money.of("3800"), true);
+    private static final Plan MENSUAL = new Plan(1L, "Mensual", 30, Money.of("450"), null, true);
+    private static final Plan ANUAL = new Plan(4L, "Anual", 365, Money.of("3800"), null, true);
 
     @Test
     void elVencimientoEsElInicioMasLosDiasDelPlan_aunqueCruceFinDeMes() {

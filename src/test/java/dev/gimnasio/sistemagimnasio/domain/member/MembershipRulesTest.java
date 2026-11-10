@@ -24,7 +24,7 @@ class MembershipRulesTest {
     private static final LocalDate TODAY = LocalDate.of(2026, 11, 3);
     private static final int WARNING = 7;
     private static final int AUTO_DEACTIVATION_DAYS = 30;
-    private static final Plan MENSUAL = new Plan(1L, "Mensual", 30, Money.of("450"), true);
+    private static final Plan MENSUAL = new Plan(1L, "Mensual", 30, Money.of("450"), null, true);
 
     private static Membership endingOn(LocalDate end) {
         return new Membership(null, 1, 1, 1, end.minusDays(30), end);
@@ -140,7 +140,7 @@ class MembershipRulesTest {
         for (int i = 0; i < 300; i++) {
             long length = ChronoUnit.DAYS.between(current.start(), current.end());
             LocalDate payDay = current.start().plusDays(random.nextInt((int) length + 1));
-            Plan plan = new Plan(2L, "Plan", durations[random.nextInt(durations.length)], Money.of("100"), true);
+            Plan plan = new Plan(2L, "Plan", durations[random.nextInt(durations.length)], Money.of("100"), null, true);
 
             current = Membership.begin(1, plan, 1, MembershipRules.renewalStart(current, payDay));
             paidDays += plan.durationDays();

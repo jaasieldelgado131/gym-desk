@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class MembershipPaymentTest {
     private static final Folio FOLIO = Folio.of("GYM-", 15);
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 11, 4, 9, 0);
-    private static final Plan ESTUDIANTE = new Plan(2L, "Estudiante", 30, Money.of("350"), true);
+    private static final Plan ESTUDIANTE = new Plan(2L, "Estudiante", 30, Money.of("350"), null, true);
     private static final PaymentMethod EFECTIVO = new PaymentMethod(1L, "Efectivo", true, true);
     private static final PaymentMethod TARJETA = new PaymentMethod(2L, "Tarjeta", false, true);
 

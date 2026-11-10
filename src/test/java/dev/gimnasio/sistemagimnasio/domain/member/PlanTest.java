@@ -3,30 +3,55 @@ package dev.gimnasio.sistemagimnasio.domain.member;
 import dev.gimnasio.sistemagimnasio.domain.shared.DomainException;
 import dev.gimnasio.sistemagimnasio.domain.shared.Money;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PlanTest {
 
+    private static Plan plan(int days, String price) {
+        return new Plan(null, "Plan", days, Money.of(price), null, true);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 730})
+    void laDuracion_vaDe1a730Dias(int days) {
+        assertEquals(days, plan(days, "60").durationDays());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {-30, 0, 731})
+    void unaDuracionFueraDe1a730_seRechaza(int days) {
+        assertThrows(DomainException.class, () -> plan(days, "60"));
+    }
+
     @Test
-    void laDuracionMinimaEsUnDia() {
-        assertEquals(1, new Plan(null, "Día de prueba", 1, Money.of("60"), true).durationDays());
-        assertThrows(DomainException.class, () -> new Plan(null, "Día de prueba", 0, Money.of("60"), true));
-        assertThrows(DomainException.class, () -> new Plan(null, "Día de prueba", -30, Money.of("60"), true));
+    void elPrecio_debeSerMayorQueCero() {
+        assertEquals(Money.of("0.01"), plan(30, "0.01").price());
+        assertThrows(DomainException.class, () -> plan(30, "0"));
     }
 
     @Test
     void nombreYPrecio_sonObligatorios() {
-        assertThrows(DomainException.class, () -> new Plan(null, " ", 30, Money.of("450"), true));
-        assertThrows(DomainException.class, () -> new Plan(null, "Mensual", 30, null, true));
+        assertThrows(DomainException.class, () -> new Plan(null, " ", 30, Money.of("450"), null, true));
+        assertThrows(DomainException.class, () -> new Plan(null, "Mensual", 30, null, null, true));
+    }
+
+    @Test
+    void unPlan_noPuedeSerSuPropiaReferencia() {
+        assertThrows(DomainException.class, () -> new Plan(4L, "Anual", 365, Money.of("3800"), 4L, true));
+        assertDoesNotThrow(() -> new Plan(4L, "Anual", 365, Money.of("3800"), 1L, true));
+        assertDoesNotThrow(() -> new Plan(null, "Anual", 365, Money.of("3800"), 1L, true));
     }
 
     @Test
     void desactivar_soloCambiaElEstadoYNoTocaElOriginal() {
-        Plan mensual = new Plan(5L, "Mensual", 30, Money.of("450"), true);
-        assertEquals(new Plan(5L, "Mensual", 30, Money.of("450"), false), mensual.withActive(false));
-        assertTrue(mensual.active());
+        Plan anual = new Plan(5L, "Anual", 365, Money.of("3800"), 1L, true);
+        assertEquals(new Plan(5L, "Anual", 365, Money.of("3800"), 1L, false), anual.withActive(false));
+        assertTrue(anual.active());
     }
 }
