@@ -1,8 +1,12 @@
 package dev.gimnasio.sistemagimnasio.application.usecase.settings;
 
+import dev.gimnasio.sistemagimnasio.application.fakes.InMemoryFolioSeries;
+import dev.gimnasio.sistemagimnasio.application.fakes.InMemoryMembershipPayments;
+import dev.gimnasio.sistemagimnasio.application.fakes.InMemorySales;
 import dev.gimnasio.sistemagimnasio.application.fakes.InMemorySettings;
 import dev.gimnasio.sistemagimnasio.application.fakes.InMemoryUsers;
 import dev.gimnasio.sistemagimnasio.application.shared.Authorizer;
+import dev.gimnasio.sistemagimnasio.domain.payment.FolioSeries;
 import dev.gimnasio.sistemagimnasio.domain.settings.GymSettings;
 import dev.gimnasio.sistemagimnasio.domain.shared.DomainException;
 import dev.gimnasio.sistemagimnasio.domain.user.Role;
@@ -19,12 +23,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class GetSettingsTest {
     private final InMemorySettings settings = new InMemorySettings();
     private final InMemoryUsers users = new InMemoryUsers();
-    private final GetSettings getSettings = new GetSettings(settings, new Authorizer(users));
+    private final InMemoryFolioSeries folioSeries = new InMemoryFolioSeries();
+    private final InMemoryMembershipPayments payments = new InMemoryMembershipPayments();
+    private final InMemorySales sales = new InMemorySales();
+    private final GetSettings getSettings = new GetSettings(settings, folioSeries, payments, sales,
+            new Authorizer(users));
 
     @Test
     void devuelveTodosLosCampos_ySinCobrosNiVentasLaMonedaNoSeBloquea() {
         settings.settings = new GymSettings("Gym Fuerza", "Av. 1", "5512345678", new byte[]{7}, "Gracias",
-                InMemorySettings.MXN, 10, 45, "GF-");
+                InMemorySettings.MXN, 10, 45);
+        folioSeries.put(new FolioSeries(FolioSeries.MEMBERSHIP_PAYMENTS, "GF-", 4));
 
         SettingsView view = getSettings.execute(users.admin());
 
@@ -40,13 +49,13 @@ class GetSettingsTest {
         assertFalse(view.currencyLocked());
         assertEquals(0, view.paymentsCount());
         assertEquals(0, view.salesCount());
-        assertEquals("GF-0001 en cobros", view.folioFormat());
+        assertEquals("GF-0001", view.folioExample());
     }
 
     @Test
     void conCobrosOVentas_laMonedaQuedaBloqueada_yTraeLosConteos() {
-        settings.payments = 41;
-        settings.sales = 18;
+        payments.count = 41;
+        sales.count = 18;
 
         SettingsView view = getSettings.execute(users.admin());
 
@@ -56,9 +65,9 @@ class GetSettingsTest {
     }
 
     @Test
-    void elFormatoDeFolio_usaElAnchoDeLaSerie() {
-        settings.folioWidth = 6;
-        assertEquals("GYM-000001 en cobros", getSettings.execute(users.admin()).folioFormat());
+    void elEjemploDeFolio_usaElAnchoDeLaSerie() {
+        folioSeries.put(new FolioSeries(FolioSeries.MEMBERSHIP_PAYMENTS, "GYM-", 6));
+        assertEquals("GYM-000001", getSettings.execute(users.admin()).folioExample());
     }
 
     @ParameterizedTest

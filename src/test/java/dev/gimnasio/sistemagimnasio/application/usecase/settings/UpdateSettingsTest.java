@@ -1,9 +1,14 @@
 package dev.gimnasio.sistemagimnasio.application.usecase.settings;
 
+import dev.gimnasio.sistemagimnasio.application.fakes.ImmediateTransactions;
+import dev.gimnasio.sistemagimnasio.application.fakes.InMemoryFolioSeries;
+import dev.gimnasio.sistemagimnasio.application.fakes.InMemoryMembershipPayments;
+import dev.gimnasio.sistemagimnasio.application.fakes.InMemorySales;
 import dev.gimnasio.sistemagimnasio.application.fakes.InMemorySettings;
 import dev.gimnasio.sistemagimnasio.application.fakes.InMemoryUsers;
 import dev.gimnasio.sistemagimnasio.application.shared.Authorizer;
 import dev.gimnasio.sistemagimnasio.application.shared.ValidationException;
+import dev.gimnasio.sistemagimnasio.domain.payment.FolioSeries;
 import dev.gimnasio.sistemagimnasio.domain.settings.GymSettings;
 import dev.gimnasio.sistemagimnasio.domain.shared.DomainException;
 import dev.gimnasio.sistemagimnasio.domain.user.Role;
@@ -30,7 +35,12 @@ class UpdateSettingsTest {
 
     private final InMemorySettings settings = new InMemorySettings();
     private final InMemoryUsers users = new InMemoryUsers();
-    private final UpdateSettings update = new UpdateSettings(settings, new Authorizer(users));
+    private final InMemoryFolioSeries folioSeries = new InMemoryFolioSeries();
+    private final InMemoryMembershipPayments payments = new InMemoryMembershipPayments();
+    private final InMemorySales sales = new InMemorySales();
+    private final ImmediateTransactions transactions = new ImmediateTransactions();
+    private final UpdateSettings update = new UpdateSettings(settings, folioSeries, payments, sales, transactions,
+            new Authorizer(users));
     private final User admin = users.admin();
 
     private static UpdateSettingsCommand valid() {
@@ -42,6 +52,30 @@ class UpdateSettingsTest {
                                               Integer autoDeactivationDays, String folioPrefix) {
         return new UpdateSettingsCommand(gymName, address, phone, receiptFooter, logo, currency, warningDays,
                 autoDeactivationDays, folioPrefix);
+    }
+
+    private String prefix() {
+        return folioSeries.get(FolioSeries.MEMBERSHIP_PAYMENTS).prefix();
+    }
+
+    @Test
+    void todoOcurreEnUnaSolaTransaccion() {
+        update.execute(admin, valid());
+        assertEquals(1, transactions.started);
+    }
+
+    @Test
+    void conErrores_noSeGuardaNiLaConfiguracionNiElPrefijo() {
+        errors(with(" ", null, null, null, null, MXN, 7, 30, "GF-"));
+        assertEquals(0, settings.saves);
+        assertEquals("GYM-", prefix());
+    }
+
+    @Test
+    void conservaElAnchoDeLaSerie_alCambiarElPrefijo() {
+        folioSeries.put(new FolioSeries(FolioSeries.MEMBERSHIP_PAYMENTS, "GYM-", 6));
+        assertEquals("GF-000001", update.execute(admin, valid()).folioExample());
+        assertEquals(6, folioSeries.get(FolioSeries.MEMBERSHIP_PAYMENTS).width());
     }
 
     private Map<String, String> errors(UpdateSettingsCommand command) {
@@ -65,10 +99,10 @@ class UpdateSettingsTest {
         assertEquals("¡Gracias!", saved.receiptFooter());
         assertArrayEquals(PNG, saved.logo());
         assertEquals(10, saved.warningDays());
-        assertEquals(45, saved.graceDays());
-        assertEquals("GF-", saved.folioPrefix());
+        assertEquals(45, saved.autoDeactivationDays());
+        assertEquals("GF-", prefix());
         assertEquals("Gym Fuerza", view.gymName());
-        assertEquals("GF-0001 en cobros", view.folioFormat());
+        assertEquals("GF-0001", view.folioExample());
     }
 
     @Test
@@ -80,12 +114,12 @@ class UpdateSettingsTest {
         assertNull(saved.address());
         assertNull(saved.phone());
         assertNull(saved.receiptFooter());
-        assertEquals("GYM-", saved.folioPrefix());
+        assertEquals("GYM-", prefix());
     }
 
     @Test
     void logoNulo_quitaElLogotipo() {
-        settings.settings = new GymSettings("Gym", null, null, PNG, null, MXN, 7, 30, "GYM-");
+        settings.settings = new GymSettings("Gym", null, null, PNG, null, MXN, 7, 30);
         update.execute(admin, logo(null));
         assertNull(settings.settings.logo());
     }
@@ -138,7 +172,7 @@ class UpdateSettingsTest {
 
     @Test
     void conCobrosOVentas_noSePuedeCambiarLaMoneda_peroSiConservarla() {
-        settings.payments = 1;
+        payments.count = 1;
 
         assertEquals(Map.of("currency", "No se puede cambiar: ya hay cobros o ventas registrados en MXN."),
                 errors(with("Gym", null, null, null, null, USD, 7, 30, "GYM-")));
@@ -148,7 +182,7 @@ class UpdateSettingsTest {
 
     @Test
     void conSoloVentas_tambienSeBloqueaLaMoneda() {
-        settings.sales = 3;
+        sales.count = 3;
         assertEquals(List.of("currency"), List.copyOf(errors(with("Gym", null, null, null, null, USD, 7, 30, "GYM-")).keySet()));
     }
 

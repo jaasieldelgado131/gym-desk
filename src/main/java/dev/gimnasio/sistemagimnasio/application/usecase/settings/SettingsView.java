@@ -1,11 +1,14 @@
 package dev.gimnasio.sistemagimnasio.application.usecase.settings;
 
-import dev.gimnasio.sistemagimnasio.domain.payment.Folio;
+import dev.gimnasio.sistemagimnasio.domain.payment.FolioSeries;
 import dev.gimnasio.sistemagimnasio.domain.settings.GymSettings;
 
 import java.util.Currency;
 
-/** {@code currencyLocked}, los conteos y {@code folioFormat} son de solo lectura. */
+/**
+ * {@code currencyLocked}, los conteos y {@code folioExample} son de solo lectura.
+ * {@code folioExample} es un folio de cobro con el prefijo y el ancho actuales, por ejemplo GYM-0001.
+ */
 public record SettingsView(
         String gymName,
         String address,
@@ -19,9 +22,9 @@ public record SettingsView(
         boolean currencyLocked,
         int paymentsCount,
         int salesCount,
-        String folioFormat) {
+        String folioExample) {
 
-    static SettingsView of(GymSettings settings, int paymentsCount, int salesCount, int folioWidth) {
+    static SettingsView of(GymSettings settings, FolioSeries series, RecordedOperations operations) {
         return new SettingsView(
                 settings.gymName(),
                 settings.address(),
@@ -30,11 +33,11 @@ public record SettingsView(
                 settings.logo(),
                 settings.currency(),
                 settings.warningDays(),
-                settings.graceDays(),
-                settings.folioPrefix(),
-                paymentsCount + salesCount > 0,
-                paymentsCount,
-                salesCount,
-                Folio.of(settings.folioPrefix(), 1, folioWidth).value() + " en cobros");
+                settings.autoDeactivationDays(),
+                series.prefix(),
+                operations.locksCurrency(),
+                operations.payments(),
+                operations.sales(),
+                series.format(1).value());
     }
 }

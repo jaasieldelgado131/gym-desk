@@ -20,6 +20,6 @@ public final class GetGymInfo {
     public GymInfo execute() {
         GymSettings current = settings.get();
         return new GymInfo(current.gymName(), current.logo(), current.currency(), LocalDate.now(clock),
-                current.warningDays(), current.graceDays());
+                current.warningDays(), current.autoDeactivationDays());
     }
 }

@@ -27,7 +27,7 @@ class GetGymInfoTest {
     void devuelveMarcaMonedaYParametros_conLaFechaDelReloj() {
         Currency usd = Currency.getInstance("USD");
         settings.settings = new GymSettings("Gym Fuerza", "Av. 1", "5512345678", new byte[]{1, 2}, "Gracias",
-                usd, 10, 45, "GF-");
+                usd, 10, 45);
 
         GymInfo info = at("2026-11-09T18:00:00Z");
 

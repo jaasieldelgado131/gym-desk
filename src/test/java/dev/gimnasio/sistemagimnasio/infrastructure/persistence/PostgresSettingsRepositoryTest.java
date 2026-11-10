@@ -27,21 +27,12 @@ class PostgresSettingsRepositoryTest {
         repository = new PostgresSettingsRepository(jdbi);
     }
 
-    private void execute(String sql) {
-        jdbi.useHandle(handle -> handle.execute(sql));
-    }
-
-    private long id(String insert) {
-        return jdbi.withHandle(handle -> handle.createQuery(insert + " RETURNING id").mapTo(Long.class).one());
-    }
-
     private void insertDefaults() {
-        execute("INSERT INTO configuracion (nombre_gimnasio) VALUES ('Mi gimnasio')");
-        execute("INSERT INTO folio_secuencia (serie, prefijo) VALUES ('COBRO', 'GYM-')");
+        jdbi.useHandle(handle -> handle.execute("INSERT INTO configuracion (nombre_gimnasio) VALUES ('Mi gimnasio')"));
     }
 
     private static GymSettings plain(byte[] logo) {
-        return new GymSettings("Gym", null, null, logo, null, MXN, 7, 30, "GYM-");
+        return new GymSettings("Gym", null, null, logo, null, MXN, 7, 30);
     }
 
     @Test
@@ -57,18 +48,16 @@ class PostgresSettingsRepositoryTest {
         assertNull(settings.receiptFooter());
         assertEquals(MXN, settings.currency());
         assertEquals(7, settings.warningDays());
-        assertEquals(30, settings.graceDays());
-        assertEquals("GYM-", settings.folioPrefix());
-        assertEquals(4, repository.folioWidth());
+        assertEquals(30, settings.autoDeactivationDays());
     }
 
     @Test
-    void guarda_todosLosCampos_incluidoElLogotipoYElPrefijoDeCobros() {
+    void guarda_todosLosCampos_incluidoElLogotipo() {
         insertDefaults();
         byte[] logo = {(byte) 0x89, 0x50, 0x4E, 0x47, 0, 1};
 
         repository.save(new GymSettings("Gym Fuerza", "Av. Juárez 10", "55 1234 5678", logo, "¡Gracias!",
-                Currency.getInstance("USD"), 10, 45, "GF-"));
+                Currency.getInstance("USD"), 10, 45));
         GymSettings read = repository.get();
 
         assertEquals("Gym Fuerza", read.gymName());
@@ -78,8 +67,7 @@ class PostgresSettingsRepositoryTest {
         assertEquals("¡Gracias!", read.receiptFooter());
         assertEquals(Currency.getInstance("USD"), read.currency());
         assertEquals(10, read.warningDays());
-        assertEquals(45, read.graceDays());
-        assertEquals("GF-", read.folioPrefix());
+        assertEquals(45, read.autoDeactivationDays());
     }
 
     @Test
@@ -93,31 +81,8 @@ class PostgresSettingsRepositoryTest {
     }
 
     @Test
-    void sinConfiguracion_oSinSerieDeCobros_fallaConClaridad() {
+    void sinConfiguracion_fallaConClaridad() {
         assertThrows(IllegalStateException.class, repository::get);
-        execute("INSERT INTO configuracion (nombre_gimnasio) VALUES ('Mi gimnasio')");
-        assertThrows(IllegalStateException.class, repository::get);
-        assertThrows(IllegalStateException.class, repository::folioWidth);
         assertThrows(IllegalStateException.class, () -> repository.save(plain(null)));
-    }
-
-    @Test
-    void cuentaCobrosYVentas() {
-        insertDefaults();
-        assertEquals(0, repository.countPayments());
-        assertEquals(0, repository.countSales());
-
-        long usuario = id("INSERT INTO usuario (nombre, nombre_usuario, contrasena_hash, rol) VALUES ('Ana', 'ana', 'h', 'caja')");
-        long socio = id("INSERT INTO socio (nombre, telefono, fecha_alta) VALUES ('Luis', '5512345678', '2026-11-01')");
-        long metodo = id("INSERT INTO metodo_pago (nombre) VALUES ('Tarjeta')");
-        for (int i = 1; i <= 2; i++) {
-            execute("INSERT INTO pago (folio, socio_id, usuario_id, metodo_pago_id, monto) VALUES ('GYM-" + i + "', "
-                    + socio + ", " + usuario + ", " + metodo + ", 450)");
-        }
-        execute("INSERT INTO venta (folio, metodo_pago_id, total, usuario_id) VALUES ('GYM-V-1', "
-                + metodo + ", 18.50, " + usuario + ")");
-
-        assertEquals(2, repository.countPayments());
-        assertEquals(1, repository.countSales());
     }
 }
