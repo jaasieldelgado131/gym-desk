@@ -44,7 +44,7 @@ sistema-gimnasio/
     │   │   └── user/                    User, Role, Permission
     │   │
     │   ├── application/                 lo que el sistema hace
-    │   │   ├── shared/                  Authorizer, ValidationException, NotFoundException, CatalogItem, CatalogCommand
+    │   │   ├── shared/                  Authorizer, ValidationException, NotFoundException
     │   │   ├── port/out/                (planeado) interfaces que la aplicación necesita del exterior
     │   │   │   ├── MemberRepository, MembershipPaymentRepository, SaleRepository
     │   │   │   ├── ProductRepository, UserRepository, SettingsRepository

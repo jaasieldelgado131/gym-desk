@@ -160,17 +160,15 @@ Ahorro de un plan frente a pagar mes a mes con su plan mensual de referencia.
 | `percent` | `Integer` | *opcional*; porcentaje ahorrado. |
 | `reason` | `String` | *opcional*; con `NO_DISPONIBLE`: «el plan no tiene un plan mensual de referencia», «el plan de referencia (Mensual) está inactivo» o «90 días no equivalen a meses completos». |
 
-### `CatalogItem`
+### Elementos de catálogo
 
-Un elemento de catálogo (método de pago, motivo de movimiento, categoría de producto).
+Cada catálogo tiene su propio record, con solo los campos que le aplican:
 
-| Campo | Tipo | Notas |
-|---|---|---|
-| `id` | `long` | |
-| `name` | `String` | |
-| `active` | `boolean` | |
-| `cash` | `boolean` | Solo métodos de pago: `true` si es efectivo y pide lo recibido. |
-| `system` | `boolean` | Solo motivos: los que usa el sistema («Venta», «Existencia inicial»); no se ofrecen, editan ni desactivan. |
+| Record | Campos |
+|---|---|
+| `PaymentMethodItem` | `id`, `name`, `cash` (`true` si es efectivo y pide lo recibido), `active` |
+| `MovementReasonItem` | `id`, `name`, `system` (los que usa el sistema, como «Venta» o «Existencia inicial»; no se ofrecen, editan ni desactivan), `active` |
+| `ProductCategoryItem` | `id`, `name`, `active` |
 
 ### `GymHeader`
 
@@ -347,7 +345,7 @@ Permiso: `CHARGE_MEMBERSHIP`.
 | Campo | Tipo | Notas |
 |---|---|---|
 | `plans` | `List<PlanOption>` | Solo activos. Cada uno: `id`, `name`, `durationDays`, `price`, `savings` (`SavingsView`). |
-| `paymentMethods` | `List<CatalogItem>` | Solo activos. |
+| `paymentMethods` | `List<PaymentMethodItem>` | Solo activos. |
 
 ### `PreviewMembershipCharge` · Resumen antes de cobrar
 
@@ -364,7 +362,7 @@ Permiso: `CHARGE_MEMBERSHIP`. No guarda nada ni lanza por datos incompletos (ver
 | `newStart`, `newEnd` | `LocalDate` | *opcionales*; con socio y plan. |
 | `kind` | `ChargeKind` | *opcional*; la UI explica con él la regla aplicada. |
 | `total` | `Money` | Precio del plan, o 0 sin plan. |
-| `paymentMethod` | `CatalogItem` | *opcional* |
+| `paymentMethod` | `PaymentMethodItem` | *opcional* |
 | `cashReceived` | `Money` | *opcional* |
 | `change` | `Money` | *opcional*; si lo recibido alcanza. |
 | `missing` | `Money` | *opcional*; si lo recibido no alcanza («Faltan $50.00»). |
@@ -427,7 +425,7 @@ El ticket en armado (agregar, cambiar cantidad, quitar, vaciar) vive en la UI. E
 
 Permiso: `SELL`.
 
-**Salida:** `SaleOptions(categories, paymentMethods)`, ambas `List<CatalogItem>` con solo activos.
+**Salida:** `SaleOptions(categories, paymentMethods)`: `List<ProductCategoryItem>` y `List<PaymentMethodItem>`, con solo activos.
 
 ### `SearchProductsForSale` · Buscar productos
 
@@ -461,7 +459,7 @@ Permiso: `SELL`. No guarda nada ni lanza por datos incompletos.
 | `lines` | `List<SaleLineView>` | `productId`, `code`, `name`, `unitPrice`, `quantity`, `subtotal`, `stock`. Con `stock` la UI deshabilita «+» al llegar a la existencia. |
 | `pieces` | `int` | Suma de cantidades. |
 | `total` | `Money` | |
-| `paymentMethod` | `CatalogItem` | *opcional* |
+| `paymentMethod` | `PaymentMethodItem` | *opcional* |
 | `cashReceived`, `change`, `missing` | `Money` | *opcionales*, igual que en el cobro. |
 | `errors` | `Map<String, String>` | |
 | `ready` | `boolean` | |
@@ -545,7 +543,7 @@ Permiso: `REGISTER_STOCK_MOVEMENT`.
 | Campo | Tipo | Notas |
 |---|---|---|
 | `products` | `List<StockRow>` | Productos activos. |
-| `reasons` | `List<CatalogItem>` | Motivos activos, sin los de sistema. Es una sola lista para los tres tipos, como en la especificación. |
+| `reasons` | `List<MovementReasonItem>` | Motivos activos, sin los de sistema. Es una sola lista para los tres tipos, como en la especificación. |
 
 ### `PreviewStockMovement` · Cómo quedará la existencia
 
@@ -694,7 +692,7 @@ Permiso: `MANAGE_SETTINGS` en todos.
 | `folioPrefix` | `String` | De 1 a 8 letras mayúsculas, números o guiones. Es el de la serie de cobros. |
 | `currencyLocked` | `boolean` | Solo lectura: `true` si ya hay cobros o ventas. |
 | `paymentsCount`, `salesCount` | `int` | Solo lectura, para explicar el bloqueo («ya hay 41 cobros y 18 ventas registrados en MXN»). |
-| `folioFormat` | `String` | Solo lectura; ejemplo del formato resultante («GYM-0001 en cobros»). Las ventas se agregan en la fase 2. |
+| `folioExample` | `String` | Solo lectura; un folio de cobro con el prefijo y el ancho actuales, por ejemplo `GYM-0001`. La UI pone el texto alrededor. |
 
 **Errores** (`ValidationException`):
 
@@ -714,16 +712,16 @@ Permiso: `MANAGE_SETTINGS` en todos.
 
 Implementado: métodos de pago. Motivos de movimiento y categorías de producto son de la fase 2.
 
-Métodos de pago, motivos de movimiento y categorías de producto comparten la misma forma. Cambia el prefijo: `PaymentMethods`, `MovementReasons`, `ProductCategories`.
+Los tres catálogos tienen los mismos cuatro casos de uso, cada uno con su command y su item:
 
 | Caso de uso | Entrada | Salida |
 |---|---|---|
-| `List…` | `boolean includeInactive` | `List<CatalogItem>` |
-| `Create…` | `CatalogCommand(name, cash)` | `CatalogItem` |
-| `Update…` | `long id` + `CatalogCommand` | `CatalogItem` |
-| `Set…Active` | `long id`, `boolean active` | `CatalogItem` |
+| `ListPaymentMethods` | `boolean includeInactive` | `List<PaymentMethodItem>` |
+| `CreatePaymentMethod` | `PaymentMethodCommand(name, cash)` | `PaymentMethodItem` |
+| `UpdatePaymentMethod` | `long id` + `PaymentMethodCommand` | `PaymentMethodItem` |
+| `SetPaymentMethodActive` | `long id`, `boolean active` | `PaymentMethodItem` |
 
-`cash` solo cuenta en métodos de pago; en los demás se ignora. El nombre se recorta y no puede repetirse sin distinguir mayúsculas, aunque el otro esté inactivo. `Create…` deja el elemento activo; `Update…` no cambia si está activo; `Set…Active` con el estado que ya tiene no hace nada. La lista va ordenada por nombre. Desactivar no cambia los registros anteriores.
+Motivos y categorías siguen la misma forma con `MovementReasonCommand(name)` / `ProductCategoryCommand(name)` y sus items. Crear, editar y activar corren cada uno en una transacción. El nombre se recorta y no puede repetirse sin distinguir mayúsculas, aunque el otro esté inactivo. `Create…` deja el elemento activo; `Update…` no cambia si está activo; `Set…Active` con el estado que ya tiene no hace nada. La lista va ordenada por nombre. Desactivar no cambia los registros anteriores.
 
 **Errores:**
 
@@ -739,7 +737,7 @@ Métodos de pago, motivos de movimiento y categorías de producto comparten la m
 
 | Tema | Qué falta decidir | Qué cambiaría |
 |---|---|---|
-| Folios de ventas | Una serie para cobros y ventas, o dos (`GYM-` y `GYM-V-`). Hoy solo existe la serie `COBRO`. | `folioFormat` y la numeración; los contratos no cambian. |
+| Folios de ventas | Una serie para cobros y ventas, o dos (`GYM-` y `GYM-V-`). Hoy solo existe la serie `COBRO`. | `folioExample` y la numeración; los contratos no cambian. |
 | Deshacer un cobro | Si se podrá, quién y durante cuánto tiempo. | Un caso de uso `VoidMembershipPayment`. |
 | Primer arranque | Cómo se crea el primer Administrador cuando no hay usuarios. | Un caso de uso de instalación o una migración con usuario inicial. |
 
@@ -778,12 +776,38 @@ Implementación: `Argon2PasswordHasher` (Argon2id, 64 MiB, 3 iteraciones, parale
 
 | Método | Contrato |
 |---|---|
-| `GymSettings get()` | La configuración con el prefijo de la serie `COBRO`. Lanza `IllegalStateException` si falta la fila o la serie (la migración V2 las crea). |
-| `void save(GymSettings settings)` | Guarda configuración y prefijo en una sola transacción. |
-| `int folioWidth()` | El ancho de la serie `COBRO`. |
-| `int countPayments()`, `int countSales()` | Cobros y ventas registrados, para bloquear la moneda. |
+| `GymSettings get()` | La configuración (sin folios). Lanza `IllegalStateException` si falta la fila; la crea la migración V2. |
+| `void save(GymSettings settings)` | Actualiza la fila. |
 
 Implementación: `PostgresSettingsRepository`.
+
+### `FolioSeriesRepository`
+
+| Método | Contrato |
+|---|---|
+| `FolioSeries get(String series)` | Prefijo y ancho de la serie (`FolioSeries.MEMBERSHIP_PAYMENTS` = `COBRO`). Lanza `IllegalStateException` si no existe. |
+| `void save(FolioSeries series)` | Guarda prefijo y ancho; el contador no cambia. |
+
+Implementación: `PostgresFolioSeriesRepository`. Tomar el siguiente folio se agrega con el cobro.
+
+### `MembershipPaymentRepository` y `SaleRepository`
+
+| Método | Contrato |
+|---|---|
+| `int count()` | Cobros (o ventas) registrados. Con alguno, la moneda queda bloqueada. |
+
+Implementaciones: `PostgresMembershipPaymentRepository` y `PostgresSaleRepository`. Crecen con el cobro y la venta.
+
+### `TransactionRunner`
+
+| Método | Contrato |
+|---|---|
+| `<T> T inTransaction(Supplier<T> work)` | Ejecuta el trabajo en una sola transacción; los repositorios usados dentro participan en ella. Si el trabajo lanza, se deshace todo. |
+| `void run(Runnable work)` | Igual, sin resultado. |
+
+Implementación: `JdbiTransactionRunner`, con aislamiento `SERIALIZABLE`. Si PostgreSQL aborta el trabajo por chocar con otra estación (SQLState `40001` o `40P01`), lo repite hasta 3 veces. Por eso el trabajo no debe tener efectos fuera de la base, como imprimir.
+
+Todo caso de uso que lea para decidir y luego escriba usa una transacción: `UpdateSettings` (moneda bloqueada, configuración y prefijo) y crear, editar o activar métodos de pago (nombre repetido, último activo). El cobro hará en una sola: tomar el folio, insertar el pago y la membresía.
 
 ### `PaymentMethodRepository`
 
