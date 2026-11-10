@@ -1,12 +1,12 @@
 package dev.gimnasio.sistemagimnasio.application.usecase.settings;
 
+import dev.gimnasio.sistemagimnasio.domain.settings.GymSettings;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 /** Reconoce la imagen por sus primeros bytes, no por el nombre del archivo. */
 final class LogoFormat {
-    static final int MAX_BYTES = 300 * 1024;
-
     private static final byte[] PNG = {(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
     private static final byte[] JPG = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF};
     private static final byte[] RIFF = "RIFF".getBytes(StandardCharsets.US_ASCII);
@@ -17,7 +17,7 @@ final class LogoFormat {
     }
 
     static boolean isAccepted(byte[] image) {
-        if (image == null || image.length == 0 || image.length > MAX_BYTES) {
+        if (image == null || image.length == 0 || image.length > GymSettings.MAX_LOGO_BYTES) {
             return false;
         }
         return startsWith(image, 0, PNG)

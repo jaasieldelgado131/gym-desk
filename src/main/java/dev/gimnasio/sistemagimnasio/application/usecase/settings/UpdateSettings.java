@@ -20,16 +20,15 @@ import java.util.Objects;
 /** Revisar el bloqueo de moneda y guardar ocurren en la misma transacción que la configuración y la serie. */
 public final class UpdateSettings {
     static final String GYM_NAME_REQUIRED = "Escribe el nombre del gimnasio.";
-    static final String WARNING_DAYS_RANGE = "Escribe un número de días entre 1 y 60.";
-    static final String AUTO_DEACTIVATION_DAYS_RANGE = "Escribe un número de días entre 1 y 365.";
+    static final String WARNING_DAYS_RANGE = "Escribe un número de días entre " + GymSettings.MIN_WARNING_DAYS
+            + " y " + GymSettings.MAX_WARNING_DAYS + ".";
+    static final String AUTO_DEACTIVATION_DAYS_RANGE = "Escribe un número de días entre "
+            + GymSettings.MIN_AUTO_DEACTIVATION_DAYS + " y " + GymSettings.MAX_AUTO_DEACTIVATION_DAYS + ".";
     static final String CURRENCY_REQUIRED = "Elige una moneda.";
-    static final String FOLIO_PREFIX_FORMAT = "Usa de 1 a 8 letras mayúsculas, números o guiones, por ejemplo GYM-.";
-    static final String LOGO_FORMAT = "Usa una imagen PNG, JPG, WEBP o SVG de hasta 300 KB.";
-
-    private static final int GYM_NAME_MAX = 100;
-    private static final int ADDRESS_MAX = 200;
-    private static final int PHONE_MAX = 30;
-    private static final int RECEIPT_FOOTER_MAX = 160;
+    static final String FOLIO_PREFIX_FORMAT = "Usa de 1 a " + FolioSeries.MAX_PREFIX_LENGTH
+            + " letras mayúsculas, números o guiones, por ejemplo GYM-.";
+    static final String LOGO_FORMAT = "Usa una imagen PNG, JPG, WEBP o SVG de hasta "
+            + GymSettings.MAX_LOGO_BYTES / 1024 + " KB.";
 
     private final SettingsRepository settings;
     private final FolioSeriesRepository folioSeries;
@@ -67,11 +66,11 @@ public final class UpdateSettings {
             if (gymName == null) {
                 errors.put("gymName", GYM_NAME_REQUIRED);
             } else {
-                checkLength(errors, "gymName", gymName, GYM_NAME_MAX);
+                checkLength(errors, "gymName", gymName, GymSettings.MAX_GYM_NAME_LENGTH);
             }
-            checkLength(errors, "address", address, ADDRESS_MAX);
-            checkLength(errors, "phone", phone, PHONE_MAX);
-            checkLength(errors, "receiptFooter", receiptFooter, RECEIPT_FOOTER_MAX);
+            checkLength(errors, "address", address, GymSettings.MAX_ADDRESS_LENGTH);
+            checkLength(errors, "phone", phone, GymSettings.MAX_PHONE_LENGTH);
+            checkLength(errors, "receiptFooter", receiptFooter, GymSettings.MAX_RECEIPT_FOOTER_LENGTH);
             if (command.logo() != null && !LogoFormat.isAccepted(command.logo())) {
                 errors.put("logo", LOGO_FORMAT);
             }
@@ -81,10 +80,11 @@ public final class UpdateSettings {
                 errors.put("currency", "No se puede cambiar: ya hay cobros o ventas registrados en "
                         + current.currency().getCurrencyCode() + ".");
             }
-            if (!inRange(command.warningDays(), GymSettings.MAX_WARNING_DAYS)) {
+            if (!inRange(command.warningDays(), GymSettings.MIN_WARNING_DAYS, GymSettings.MAX_WARNING_DAYS)) {
                 errors.put("warningDays", WARNING_DAYS_RANGE);
             }
-            if (!inRange(command.autoDeactivationDays(), GymSettings.MAX_AUTO_DEACTIVATION_DAYS)) {
+            if (!inRange(command.autoDeactivationDays(), GymSettings.MIN_AUTO_DEACTIVATION_DAYS,
+                    GymSettings.MAX_AUTO_DEACTIVATION_DAYS)) {
                 errors.put("autoDeactivationDays", AUTO_DEACTIVATION_DAYS_RANGE);
             }
             if (!FolioSeries.isValidPrefix(folioPrefix)) {
@@ -118,7 +118,7 @@ public final class UpdateSettings {
         }
     }
 
-    private static boolean inRange(Integer value, int max) {
-        return value != null && value >= 1 && value <= max;
+    private static boolean inRange(Integer value, int min, int max) {
+        return value != null && value >= min && value <= max;
     }
 }

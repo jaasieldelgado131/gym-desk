@@ -36,6 +36,15 @@ class PlanTest {
     }
 
     @Test
+    void elNombre_tieneComoMaximo60Caracteres_yElMensajeLoDice() {
+        assertEquals(Plan.MAX_NAME_LENGTH, new Plan(null, "x".repeat(Plan.MAX_NAME_LENGTH), 30, Money.of("1"), null, true)
+                .name().length());
+        DomainException e = assertThrows(DomainException.class,
+                () -> new Plan(null, "x".repeat(Plan.MAX_NAME_LENGTH + 1), 30, Money.of("1"), null, true));
+        assertEquals("El nombre del plan debe tener " + Plan.MAX_NAME_LENGTH + " caracteres o menos.", e.getMessage());
+    }
+
+    @Test
     void nombreYPrecio_sonObligatorios() {
         assertThrows(DomainException.class, () -> new Plan(null, " ", 30, Money.of("450"), null, true));
         assertThrows(DomainException.class, () -> new Plan(null, "Mensual", 30, null, null, true));

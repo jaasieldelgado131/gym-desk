@@ -8,12 +8,10 @@ import dev.gimnasio.sistemagimnasio.domain.payment.PaymentMethod;
 /** Lo que comparten los casos de uso del catálogo de métodos de pago. */
 final class PaymentMethodRules {
     static final String NAME_REQUIRED = "Escribe el nombre.";
-    static final String NAME_TOO_LONG = "Usa 40 caracteres o menos.";
+    static final String NAME_TOO_LONG = "Usa " + PaymentMethod.MAX_NAME_LENGTH + " caracteres o menos.";
     static final String NAME_TAKEN = "Ya existe uno con ese nombre.";
     static final String NOT_FOUND = "El método de pago ya no existe. Recarga la pantalla.";
     static final String LAST_ACTIVE = "Deja al menos un método de pago.";
-
-    private static final int NAME_MAX = 40;
 
     private PaymentMethodRules() {
     }
@@ -24,7 +22,7 @@ final class PaymentMethodRules {
         if (name.isEmpty()) {
             throw ValidationException.of("name", NAME_REQUIRED);
         }
-        if (name.length() > NAME_MAX) {
+        if (name.length() > PaymentMethod.MAX_NAME_LENGTH) {
             throw ValidationException.of("name", NAME_TOO_LONG);
         }
         if (methods.existsByName(name, excludeId)) {

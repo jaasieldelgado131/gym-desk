@@ -21,23 +21,46 @@ public record GymSettings(
 
     public static final int DEFAULT_WARNING_DAYS = 7;
     public static final int DEFAULT_AUTO_DEACTIVATION_DAYS = 30;
+    /** Los mensajes se arman con estos límites; la base repite los mismos en sus CHECK y varchar. */
+    public static final int MIN_WARNING_DAYS = 1;
     public static final int MAX_WARNING_DAYS = 60;
+    public static final int MIN_AUTO_DEACTIVATION_DAYS = 1;
     public static final int MAX_AUTO_DEACTIVATION_DAYS = 365;
+    public static final int MAX_GYM_NAME_LENGTH = 100;
+    public static final int MAX_ADDRESS_LENGTH = 200;
+    public static final int MAX_PHONE_LENGTH = 30;
+    public static final int MAX_RECEIPT_FOOTER_LENGTH = 160;
+    public static final int MAX_LOGO_BYTES = 300 * 1024;
 
     public GymSettings {
         if (gymName == null || gymName.isBlank()) {
             throw new DomainException("El nombre del gimnasio es obligatorio.");
         }
+        requireMaxLength("El nombre del gimnasio", gymName, MAX_GYM_NAME_LENGTH);
+        requireMaxLength("La dirección", address, MAX_ADDRESS_LENGTH);
+        requireMaxLength("El teléfono", phone, MAX_PHONE_LENGTH);
+        requireMaxLength("La leyenda del recibo", receiptFooter, MAX_RECEIPT_FOOTER_LENGTH);
+        if (logo != null && logo.length > MAX_LOGO_BYTES) {
+            throw new DomainException("El logotipo debe pesar " + MAX_LOGO_BYTES / 1024 + " KB o menos.");
+        }
         if (currency == null) {
             throw new DomainException("La moneda es obligatoria.");
         }
-        if (warningDays < 1 || warningDays > MAX_WARNING_DAYS) {
-            throw new DomainException("Los días de aviso deben estar entre 1 y 60.");
+        if (warningDays < MIN_WARNING_DAYS || warningDays > MAX_WARNING_DAYS) {
+            throw new DomainException("Los días de aviso deben estar entre " + MIN_WARNING_DAYS + " y "
+                    + MAX_WARNING_DAYS + ".");
         }
-        if (autoDeactivationDays < 1 || autoDeactivationDays > MAX_AUTO_DEACTIVATION_DAYS) {
-            throw new DomainException("El plazo de baja automática debe estar entre 1 y 365 días.");
+        if (autoDeactivationDays < MIN_AUTO_DEACTIVATION_DAYS || autoDeactivationDays > MAX_AUTO_DEACTIVATION_DAYS) {
+            throw new DomainException("El plazo de baja automática debe estar entre " + MIN_AUTO_DEACTIVATION_DAYS
+                    + " y " + MAX_AUTO_DEACTIVATION_DAYS + " días.");
         }
         logo = logo == null ? null : logo.clone();
+    }
+
+    private static void requireMaxLength(String field, String value, int max) {
+        if (value != null && value.length() > max) {
+            throw new DomainException(field + " debe tener " + max + " caracteres o menos.");
+        }
     }
 
     @Override

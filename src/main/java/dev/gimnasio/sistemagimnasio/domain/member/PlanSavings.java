@@ -36,7 +36,7 @@ public record PlanSavings(
             return unavailable("el plan de referencia (" + reference.name() + ") está inactivo");
         }
         if (reference.durationDays() != Plan.MONTHLY_DAYS) {
-            return unavailable("la referencia no dura 30 días");
+            return unavailable("la referencia no dura " + Plan.MONTHLY_DAYS + " días");
         }
         OptionalInt months = months(durationDays);
         if (months.isEmpty()) {

@@ -61,6 +61,33 @@ class GymSettingsTest {
     }
 
     @Test
+    void losTextos_respetanSuLargoMaximo() {
+        assertEquals(100, settings("x".repeat(GymSettings.MAX_GYM_NAME_LENGTH), MXN, 7, 30).gymName().length());
+        assertThrows(DomainException.class,
+                () -> settings("x".repeat(GymSettings.MAX_GYM_NAME_LENGTH + 1), MXN, 7, 30));
+        assertThrows(DomainException.class, () -> new GymSettings("Gym", "x".repeat(GymSettings.MAX_ADDRESS_LENGTH + 1),
+                null, null, null, MXN, 7, 30));
+        assertThrows(DomainException.class, () -> new GymSettings("Gym", null, "x".repeat(GymSettings.MAX_PHONE_LENGTH + 1),
+                null, null, MXN, 7, 30));
+        assertThrows(DomainException.class, () -> new GymSettings("Gym", null, null, null,
+                "x".repeat(GymSettings.MAX_RECEIPT_FOOTER_LENGTH + 1), MXN, 7, 30));
+    }
+
+    @Test
+    void elLogotipo_respetaSuPesoMaximo() {
+        new GymSettings("Gym", null, null, new byte[GymSettings.MAX_LOGO_BYTES], null, MXN, 7, 30);
+        assertThrows(DomainException.class,
+                () -> new GymSettings("Gym", null, null, new byte[GymSettings.MAX_LOGO_BYTES + 1], null, MXN, 7, 30));
+    }
+
+    @Test
+    void losMensajes_usanLosLimitesVigentes() {
+        DomainException e = assertThrows(DomainException.class,
+                () -> settings("Gym", MXN, GymSettings.MAX_WARNING_DAYS + 1, 30));
+        assertEquals("Los días de aviso deben estar entre 1 y " + GymSettings.MAX_WARNING_DAYS + ".", e.getMessage());
+    }
+
+    @Test
     void nombreYMoneda_sonObligatorios() {
         assertThrows(DomainException.class, () -> settings(" ", MXN, 7, 30));
         assertThrows(DomainException.class, () -> settings("Gym", null, 7, 30));

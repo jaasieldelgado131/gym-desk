@@ -16,14 +16,14 @@ import java.util.stream.Collectors;
 /** Lo que comparten los casos de uso de planes. */
 final class PlanRules {
     static final String NAME_REQUIRED = "Escribe el nombre del plan.";
-    static final String NAME_TOO_LONG = "Usa 60 caracteres o menos.";
+    static final String NAME_TOO_LONG = "Usa " + Plan.MAX_NAME_LENGTH + " caracteres o menos.";
     static final String NAME_TAKEN = "Ya existe un plan con ese nombre.";
-    static final String DURATION_RANGE = "Escribe la duración en días, de 1 a 730.";
+    static final String DURATION_RANGE = "Escribe la duración en días, de " + Plan.MIN_DURATION_DAYS + " a "
+            + Plan.MAX_DURATION_DAYS + ".";
     static final String PRICE_REQUIRED = "Escribe un precio mayor que cero, por ejemplo 450.00.";
-    static final String REFERENCE_INVALID = "Elige un plan de 30 días distinto de este.";
+    static final String REFERENCE_INVALID = "Elige un plan de " + Plan.MONTHLY_DAYS + " días distinto de este.";
     static final String NOT_FOUND = "El plan ya no existe. Recarga la pantalla.";
 
-    private static final int NAME_MAX = 60;
 
     private PlanRules() {
     }
@@ -39,13 +39,13 @@ final class PlanRules {
         Map<String, String> errors = new LinkedHashMap<>();
         if (name.isEmpty()) {
             errors.put("name", NAME_REQUIRED);
-        } else if (name.length() > NAME_MAX) {
+        } else if (name.length() > Plan.MAX_NAME_LENGTH) {
             errors.put("name", NAME_TOO_LONG);
         } else if (plans.existsByName(name, currentId)) {
             errors.put("name", NAME_TAKEN);
         }
         Integer days = command.durationDays();
-        if (days == null || days < 1 || days > Plan.MAX_DURATION_DAYS) {
+        if (days == null || days < Plan.MIN_DURATION_DAYS || days > Plan.MAX_DURATION_DAYS) {
             errors.put("durationDays", DURATION_RANGE);
         }
         if (!isPositive(command.price())) {
