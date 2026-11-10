@@ -104,6 +104,27 @@ public final class PostgresPaymentMethodRepository implements PaymentMethodRepos
         }
     }
 
+    @Override
+    public boolean isUsed(long id) {
+        return jdbi.withHandle(handle -> handle.createQuery("""
+                        SELECT EXISTS (SELECT 1 FROM pago WHERE metodo_pago_id = :id)
+                            OR EXISTS (SELECT 1 FROM venta WHERE metodo_pago_id = :id)
+                        """)
+                .bind("id", id)
+                .mapTo(Boolean.class)
+                .one());
+    }
+
+    @Override
+    public void delete(long id) {
+        jdbi.useHandle(handle -> handle.createUpdate("""
+                        DELETE FROM metodo_pago
+                        WHERE id = :id
+                        """)
+                .bind("id", id)
+                .execute());
+    }
+
     private static PaymentMethod map(ResultSet rs, StatementContext ctx) throws SQLException {
         return new PaymentMethod(
                 rs.getLong("id"),

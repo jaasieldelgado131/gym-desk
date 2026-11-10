@@ -20,4 +20,9 @@ public interface PaymentMethodRepository {
     PaymentMethod insert(PaymentMethod method);
 
     void update(PaymentMethod method);
+
+    /** {@code true} si ya hay cobros o ventas con este método. */
+    boolean isUsed(long id);
+
+    void delete(long id);
 }

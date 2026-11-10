@@ -25,6 +25,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -39,6 +40,7 @@ class PaymentMethodsTest {
     private final CreatePaymentMethod create = new CreatePaymentMethod(methods, transactions, authorizer);
     private final UpdatePaymentMethod update = new UpdatePaymentMethod(methods, transactions, authorizer);
     private final SetPaymentMethodActive setActive = new SetPaymentMethodActive(methods, transactions, authorizer);
+    private final DeletePaymentMethod delete = new DeletePaymentMethod(methods, transactions, authorizer);
 
     private final PaymentMethod efectivo = methods.add("Efectivo", true, true);
     private final PaymentMethod tarjeta = methods.add("Tarjeta", false, true);
@@ -160,12 +162,53 @@ class PaymentMethodsTest {
         }
     }
 
+    @Nested
+    class Eliminar {
+        @Test
+        void unMetodoSinUso_seBorra() {
+            delete.execute(admin, vales.id());
+            assertNull(methods.get(vales.id()));
+        }
+
+        @Test
+        void unMetodoYaUsado_noSeBorra_ySePideDesactivarlo() {
+            methods.markUsed(efectivo.id());
+
+            DomainException e = assertThrows(DomainException.class, () -> delete.execute(admin, efectivo.id()));
+
+            assertEquals("No puedes eliminar «Efectivo»: ya se usó en cobros o ventas. Desactívalo para dejar de ofrecerlo.",
+                    e.getMessage());
+            assertEquals(efectivo, methods.get(efectivo.id()));
+        }
+
+        @Test
+        void elUltimoActivo_noSeBorra() {
+            setActive.execute(admin, tarjeta.id(), false);
+
+            DomainException e = assertThrows(DomainException.class, () -> delete.execute(admin, efectivo.id()));
+            assertEquals("Deja al menos un método de pago.", e.getMessage());
+        }
+
+        @Test
+        void unInactivoSinUso_seBorraAunqueSoloQuedeUnActivo() {
+            setActive.execute(admin, tarjeta.id(), false);
+            delete.execute(admin, tarjeta.id());
+            assertNull(methods.get(tarjeta.id()));
+        }
+
+        @Test
+        void unIdQueNoExiste_seRechaza() {
+            assertThrows(NotFoundException.class, () -> delete.execute(admin, 99));
+        }
+    }
+
     @Test
-    void crearEditarYActivar_ocurrenCadaUnoEnSuTransaccion() {
+    void crearEditarActivarYBorrar_ocurrenCadaUnoEnSuTransaccion() {
         create.execute(admin, new PaymentMethodCommand("Otro", false));
         update.execute(admin, tarjeta.id(), new PaymentMethodCommand("Tarjeta de crédito", false));
         setActive.execute(admin, tarjeta.id(), false);
-        assertEquals(3, transactions.started);
+        delete.execute(admin, vales.id());
+        assertEquals(4, transactions.started);
     }
 
     @ParameterizedTest
@@ -177,6 +220,7 @@ class PaymentMethodsTest {
         assertThrows(DomainException.class, () -> create.execute(user, new PaymentMethodCommand("Otro", false)));
         assertThrows(DomainException.class, () -> update.execute(user, tarjeta.id(), new PaymentMethodCommand("Otro", false)));
         assertThrows(DomainException.class, () -> setActive.execute(user, tarjeta.id(), false));
+        assertThrows(DomainException.class, () -> delete.execute(user, vales.id()));
         assertEquals(0, methods.writes);
     }
 }

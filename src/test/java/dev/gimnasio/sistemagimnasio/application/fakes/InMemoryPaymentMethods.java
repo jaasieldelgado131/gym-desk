@@ -4,14 +4,17 @@ import dev.gimnasio.sistemagimnasio.application.port.out.PaymentMethodRepository
 import dev.gimnasio.sistemagimnasio.domain.payment.PaymentMethod;
 
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 public final class InMemoryPaymentMethods implements PaymentMethodRepository {
     private final Map<Long, PaymentMethod> byId = new LinkedHashMap<>();
+    private final Set<Long> used = new HashSet<>();
     private long nextId = 1;
     public int writes;
 
@@ -19,6 +22,10 @@ public final class InMemoryPaymentMethods implements PaymentMethodRepository {
         PaymentMethod method = new PaymentMethod(nextId++, name, cash, active);
         byId.put(method.id(), method);
         return method;
+    }
+
+    public void markUsed(long id) {
+        used.add(id);
     }
 
     public PaymentMethod get(long id) {
@@ -59,5 +66,16 @@ public final class InMemoryPaymentMethods implements PaymentMethodRepository {
     public void update(PaymentMethod method) {
         writes++;
         byId.put(method.id(), method);
+    }
+
+    @Override
+    public boolean isUsed(long id) {
+        return used.contains(id);
+    }
+
+    @Override
+    public void delete(long id) {
+        writes++;
+        byId.remove(id);
     }
 }

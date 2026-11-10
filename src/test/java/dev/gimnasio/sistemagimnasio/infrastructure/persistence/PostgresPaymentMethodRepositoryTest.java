@@ -84,6 +84,38 @@ class PostgresPaymentMethodRepositoryTest {
         assertThrows(IllegalStateException.class, () -> repository.update(new PaymentMethod(99L, "X", false, true)));
     }
 
+    private long id(String insert) {
+        return TestDatabase.jdbi().withHandle(handle -> handle.createQuery(insert + " RETURNING id").mapTo(Long.class).one());
+    }
+
+    @Test
+    void sabeSiUnMetodoSeUsoEnCobrosOVentas() {
+        PaymentMethod efectivo = insert("Efectivo", true, true);
+        PaymentMethod tarjeta = insert("Tarjeta", false, true);
+        PaymentMethod vales = insert("Vales", false, true);
+        long usuario = id("INSERT INTO usuario (nombre, nombre_usuario, contrasena_hash, rol) VALUES ('Ana', 'ana', 'h', 'caja')");
+        long socio = id("INSERT INTO socio (nombre, telefono, fecha_alta) VALUES ('Luis', '5512345678', '2026-11-01')");
+        id("INSERT INTO pago (folio, socio_id, usuario_id, metodo_pago_id, monto) VALUES ('GYM-0001', "
+                + socio + ", " + usuario + ", " + efectivo.id() + ", 450)");
+        id("INSERT INTO venta (folio, metodo_pago_id, total, usuario_id) VALUES ('GYM-V-0001', "
+                + tarjeta.id() + ", 18.50, " + usuario + ")");
+
+        assertTrue(repository.isUsed(efectivo.id()));
+        assertTrue(repository.isUsed(tarjeta.id()));
+        assertFalse(repository.isUsed(vales.id()));
+    }
+
+    @Test
+    void borrar_quitaSoloEseMetodo() {
+        PaymentMethod efectivo = insert("Efectivo", true, true);
+        PaymentMethod vales = insert("Vales", false, true);
+
+        repository.delete(vales.id());
+
+        assertEquals(Optional.empty(), repository.findById(vales.id()));
+        assertEquals(List.of(efectivo), repository.findAll(true));
+    }
+
     @Test
     void nombreRepetido_conOtrasMayusculas_loRechazaLaBase() {
         insert("Efectivo", true, true);
