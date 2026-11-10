@@ -24,9 +24,9 @@ public final class PostgresUserRepository implements UserRepository {
     @Override
     public Optional<UserCredentials> findCredentialsByUsername(String username) {
         return jdbi.withHandle(handle -> handle.createQuery("""
-                        SELECT id, nombre, nombre_usuario, rol::text AS rol, activo, contrasena_hash
+                        SELECT id, nombre, nombre_usuario, rol::TEXT AS rol, activo, contrasena_hash
                         FROM usuario
-                        WHERE lower(nombre_usuario) = lower(:username)
+                        WHERE LOWER(nombre_usuario) = LOWER(:username)
                         """)
                 .bind("username", username)
                 .map(PostgresUserRepository::mapCredentials)
@@ -36,7 +36,7 @@ public final class PostgresUserRepository implements UserRepository {
     @Override
     public Optional<User> findById(long id) {
         return jdbi.withHandle(handle -> handle.createQuery("""
-                        SELECT id, nombre, nombre_usuario, rol::text AS rol, activo
+                        SELECT id, nombre, nombre_usuario, rol::TEXT AS rol, activo
                         FROM usuario
                         WHERE id = :id
                         """)

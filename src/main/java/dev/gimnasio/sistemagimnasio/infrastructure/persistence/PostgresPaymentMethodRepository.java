@@ -24,7 +24,7 @@ public final class PostgresPaymentMethodRepository implements PaymentMethodRepos
                         SELECT id, nombre, es_efectivo, activo
                         FROM metodo_pago
                         WHERE activo OR :includeInactive
-                        ORDER BY lower(nombre), id
+                        ORDER BY LOWER(nombre), id
                         """)
                 .bind("includeInactive", includeInactive)
                 .map(PostgresPaymentMethodRepository::map)
@@ -49,8 +49,8 @@ public final class PostgresPaymentMethodRepository implements PaymentMethodRepos
                         SELECT EXISTS (
                             SELECT 1
                             FROM metodo_pago
-                            WHERE lower(nombre) = lower(:nombre)
-                              AND (CAST(:excludeId AS bigint) IS NULL OR id <> CAST(:excludeId AS bigint))
+                            WHERE LOWER(nombre) = LOWER(:nombre)
+                              AND (CAST(:excludeId AS BIGINT) IS NULL OR id <> CAST(:excludeId AS BIGINT))
                         )
                         """)
                 .bind("nombre", name)
@@ -62,7 +62,7 @@ public final class PostgresPaymentMethodRepository implements PaymentMethodRepos
     @Override
     public int countActive() {
         return jdbi.withHandle(handle -> handle.createQuery("""
-                        SELECT count(*)
+                        SELECT COUNT(*)
                         FROM metodo_pago
                         WHERE activo
                         """)
