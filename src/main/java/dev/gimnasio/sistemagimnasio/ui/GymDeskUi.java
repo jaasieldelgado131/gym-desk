@@ -10,14 +10,9 @@ import dev.gimnasio.sistemagimnasio.ui.common.Themes;
 import dev.gimnasio.sistemagimnasio.ui.common.UseCases;
 import dev.gimnasio.sistemagimnasio.ui.login.LoginController;
 import dev.gimnasio.sistemagimnasio.ui.login.LoginViewModel;
+import dev.gimnasio.sistemagimnasio.ui.shell.ShellController;
 import dev.gimnasio.sistemagimnasio.ui.startup.StartupController;
 import javafx.application.Platform;
-import javafx.geometry.Pos;
-import javafx.scene.Parent;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.util.Objects;
@@ -81,36 +76,23 @@ public final class GymDeskUi implements AutoCloseable {
 
     private void onSignedIn(User user) {
         session.open(user);
-        window.setContent(signedInPlaceholder(user));
+        // La fecha de la cabecera sale del reloj del sistema: se vuelve a leer al entrar.
+        background.run(useCases.getGymInfo()::execute, this::showShell, error -> showShell(gymInfo));
+    }
+
+    private void showShell(GymInfo info) {
+        if (!session.isOpen()) {
+            return;
+        }
+        gymInfo = info;
+        window.setGymName(info.gymName());
+        window.setContent(FxmlView.load("shell", new ShellController(info, session.actor(), themes, this::signOut)));
     }
 
     /** Cerrar sesión no es un caso de uso: se descarta el actor y se vuelve al acceso. */
     private void signOut() {
         session.close();
         showLogin();
-    }
-
-    /** Provisional: la entrega 3 muestra aquí el menú y la cabecera. */
-    private Parent signedInPlaceholder(User user) {
-        Label title = new Label("Sesión iniciada");
-        title.getStyleClass().add("titulo-24");
-        Label who = new Label(user.name() + " · " + user.role().displayName() + " · " + user.username());
-        who.getStyleClass().add("texto-2");
-        who.setId("sesion-usuario");
-        Label next = new Label("El menú y la cabecera llegan en la siguiente entrega.");
-        next.getStyleClass().add("texto-3");
-        Button logout = new Button("Cerrar sesión");
-        logout.setId("cerrar-sesion");
-        logout.setOnAction(e -> signOut());
-        VBox card = new VBox(10, title, who, next, logout);
-        card.getStyleClass().addAll("marco-contenido", "acceso-form");
-        card.setAlignment(Pos.CENTER_LEFT);
-        StackPane frame = new StackPane(card);
-        frame.getStyleClass().add("marco");
-        frame.setMaxSize(StackPane.USE_PREF_SIZE, StackPane.USE_PREF_SIZE);
-        StackPane root = new StackPane(frame);
-        root.getStyleClass().addAll("fondo-app", "acceso");
-        return root;
     }
 
     @Override

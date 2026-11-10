@@ -25,6 +25,13 @@ class FormatsTest {
     }
 
     @Test
+    void mediumDateLikeThePrototypeHeader() {
+        assertEquals("mar 10 nov 2026", Formats.mediumDate(LocalDate.of(2026, 11, 10)));
+        assertEquals("mié 2 sep 2026", Formats.mediumDate(LocalDate.of(2026, 9, 2)));
+        assertEquals("sáb 1 ago 2026", Formats.mediumDate(LocalDate.of(2026, 8, 1)));
+    }
+
+    @Test
     void longDateIsCapitalizedSpanish() {
         assertEquals("Lunes 9 de noviembre de 2026", Formats.longDate(LocalDate.of(2026, 11, 9)));
     }

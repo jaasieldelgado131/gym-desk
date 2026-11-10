@@ -151,25 +151,200 @@ class CapturasUiTest {
         FxHarness.runFx(() -> ((javafx.scene.control.Button) scene.lookup("#submit")).fire());
         captureAll("entrega-2", "entrando");
         users.gate.countDown();
-        FxHarness.waitUntil("sesión iniciada", () -> scene.getRoot().lookup("#sesion-usuario") != null);
+        FxHarness.waitUntil("sesión iniciada", () -> FxHarness.onFxUnchecked(stage::getScene).lookup("#userName") != null);
         assertEquals(before + 1, users.lookups, "Enter repetido y clic durante la revisión no envían otra vez");
-        assertEquals("Administración · Administrador · admin", text(scene, "sesion-usuario"));
         Scene current = FxHarness.onFx(stage::getScene);
-        captureAll("entrega-2", "sesion-iniciada");
+        assertEquals("Administración", text(current, "userName"));
+        assertEquals("Administrador · admin", text(current, "userRole"));
+        assertEquals(true, FxHarness.onFx(() -> ui.session().isOpen()));
 
         // 5. Cerrar sesión vuelve al acceso con los campos vacíos.
-        FxHarness.runFx(() -> ((javafx.scene.control.Button) current.lookup("#cerrar-sesion")).fire());
-        FxHarness.waitUntil("vuelta al acceso", () -> current.lookup("#username") != null);
-        assertEquals("", text(current, "password"));
+        FxHarness.runFx(() -> ((javafx.scene.control.Button) current.lookup("#signOut")).fire());
+        FxHarness.waitUntil("vuelta al acceso", () -> FxHarness.onFxUnchecked(stage::getScene).lookup("#username") != null);
+        Scene back = FxHarness.onFx(stage::getScene);
+        assertEquals("", text(back, "password"));
         assertEquals(false, FxHarness.onFx(() -> ui.session().isOpen()));
         System.out.println("[teclado] acceso funcional: Enter envía desde Usuario y Contraseña; foco al campo con error; "
                 + "Enter y clic repetidos ignorados mientras revisa");
+    }
+
+    private Scene signIn(UiFakes.Users users, String username) throws Exception {
+        Scene scene = open(users);
+        FxHarness.waitUntil("pantalla de acceso", () -> scene.lookup("#username") != null);
+        typeInto(scene, "username", username);
+        typeInto(scene, "password", UiFakes.PASSWORD);
+        FxHarness.runFx(() -> scene.lookup("#password").requestFocus());
+        FxHarness.press(scene, KeyCode.ENTER, false);
+        FxHarness.waitUntil("menú", () -> FxHarness.onFxUnchecked(stage::getScene).lookup("#nav-cobro") != null);
+        Scene shell = FxHarness.onFx(stage::getScene);
+        try {
+            FxHarness.waitUntil("foco en el menú", () -> shell.getFocusOwner() != null
+                    && shell.getFocusOwner().getId() != null && shell.getFocusOwner().getId().startsWith("nav-"));
+        } catch (AssertionError e) {
+            System.out.println("[diag] foco=" + FxHarness.focusOwner(shell) + " stageFocused=" + FxHarness.onFx(stage::isFocused)
+                    + " owner=" + FxHarness.onFx(() -> String.valueOf(shell.getFocusOwner())));
+            throw e;
+        }
+        return shell;
+    }
+
+    private List<String> navIds(Scene scene) throws Exception {
+        return FxHarness.onFx(() -> scene.getRoot().lookupAll(".nav-enlace").stream().map(javafx.scene.Node::getId).toList());
+    }
+
+    private static UiFakes.Users staff() {
+        UiFakes.Users users = new UiFakes.Users();
+        users.add("Administración General", "admin", Role.ADMINISTRADOR, true);
+        users.add("Rocío Méndez", "rocio", Role.RECEPCION, true);
+        users.add("Carlos Ruiz", "carlos", Role.CAJA, true);
+        return users;
+    }
+
+    @Test
+    void entrega3MenuAdministrador() throws Exception {
+        Scene scene = signIn(staff(), "admin");
+        assertEquals(List.of("nav-tablero", "nav-cobro", "nav-venta", "nav-socios", "nav-planes", "nav-productos",
+                "nav-inventario", "nav-usuarios", "nav-configuracion"), navIds(scene));
+        assertEquals("Tablero", text(scene, "titulo-pagina"));
+        assertEquals("nav-tablero", FxHarness.focusOwner(scene));
+        assertEquals("mar 10 nov 2026", FxHarness.onFx(() -> ((javafx.scene.control.Label) scene.lookup(".fecha")).getText()));
+        captureAll("entrega-3", "tablero-administrador");
+        FxHarness.resizeScene(stage, AppWindow.MIN_WIDTH, AppWindow.MIN_HEIGHT);
+        // A 1024×680 las secciones del administrador no caben: la lista se desplaza con barra visible.
+        assertEquals(true, FxHarness.onFx(() -> {
+            var sp = (javafx.scene.control.ScrollPane) scene.lookup(".nav-desplazable");
+            var bar = sp.lookupAll(".scroll-bar").stream()
+                    .map(n -> (javafx.scene.control.ScrollBar) n)
+                    .filter(b -> b.getOrientation() == javafx.geometry.Orientation.VERTICAL).findFirst().orElseThrow();
+            var thumb = bar.lookup(".thumb");
+            return sp.getContent().getLayoutBounds().getHeight() > sp.getViewportBounds().getHeight()
+                    && bar.isVisible() && thumb.getLayoutBounds().getWidth() > 0;
+        }), "barra del menú visible al mínimo");
+        FxHarness.runFx(() -> scene.lookup("#nav-configuracion").requestFocus());
+        FxHarness.settle();
+        assertEquals(true, FxHarness.onFx(() -> {
+            var sp = (javafx.scene.control.ScrollPane) scene.lookup(".nav-desplazable");
+            var button = scene.lookup("#nav-configuracion");
+            var inViewport = sp.lookup(".viewport").localToScene(sp.lookup(".viewport").getLayoutBounds());
+            return inViewport.contains(button.localToScene(button.getLayoutBounds()));
+        }), "con el foco, Configuración queda a la vista");
+        FxHarness.capture(scene, OUT.resolve("entrega-3").resolve("menu-desplazado-claro-1024.png"));
+        FxHarness.runFx(() -> scene.lookup("#nav-tablero").requestFocus());
+        FxHarness.resizeScene(stage, AppWindow.WIDTH, AppWindow.HEIGHT);
+
+        // Tab recorre el menú, Cerrar sesión, el tema y los atajos, y vuelve al menú.
+        List<String> order = tabOrder(scene, 12);
+        System.out.println("[teclado] menú administrador, Tab: " + order);
+        assertEquals(List.of("nav-tablero", "nav-cobro", "nav-venta", "nav-socios", "nav-planes", "nav-productos",
+                "nav-inventario", "nav-usuarios", "nav-configuracion", "signOut", "tema-claro", "atajos", "nav-tablero"), order);
+
+        // Espacio sobre una sección la abre.
+        FxHarness.runFx(() -> scene.lookup("#nav-configuracion").requestFocus());
+        FxHarness.press(scene, KeyCode.SPACE, false);
+        assertEquals("Configuración", text(scene, "titulo-pagina"));
+        assertEquals("Pantalla en preparación", text(scene, "estado-pendiente"));
+        captureAll("entrega-3", "configuracion-administrador");
+        FxHarness.runFx(() -> scene.lookup("#nav-planes").requestFocus());
+        FxHarness.press(scene, KeyCode.ENTER, false);
+        assertEquals("Planes de membresía", text(scene, "titulo-pagina"), "Enter también abre la sección, como un enlace");
+        assertEquals("nav-planes", FxHarness.focusOwner(scene), "el foco se queda en el menú");
+
+        // «?» abre los atajos; el diálogo toma el tema y Esc lo cierra.
+        FxHarness.typeLater(scene, "?");
+        FxHarness.waitUntil("diálogo de atajos", () -> dialogScene() != null);
+        for (Themes.Theme theme : Themes.Theme.values()) {
+            FxHarness.runFx(() -> themes.set(theme));
+            FxHarness.settle();
+            Scene dialog = FxHarness.onFx(this::dialogScene);
+            assertEquals(true, FxHarness.onFx(() -> dialog.getRoot().getStyleClass().contains(theme.styleClass())));
+            FxHarness.capture(dialog, OUT.resolve("entrega-3").resolve("dialogo-atajos-" + theme.name().toLowerCase() + ".png"));
+        }
+        Scene dialog = FxHarness.onFx(this::dialogScene);
+        FxHarness.pressLater(dialog, KeyCode.ESCAPE);
+        FxHarness.waitUntil("diálogo cerrado", () -> dialogScene() == null);
+        FxHarness.runFx(() -> themes.set(Themes.Theme.CLARO));
+        System.out.println("[teclado] Espacio y Enter abren la sección con el foco; «?» abre los atajos; Esc los cierra");
+
+        // Cerrar sesión con el teclado vuelve al acceso.
+        FxHarness.runFx(() -> scene.lookup("#signOut").requestFocus());
+        FxHarness.press(scene, KeyCode.SPACE, false);
+        FxHarness.waitUntil("vuelta al acceso", () -> FxHarness.onFxUnchecked(stage::getScene).lookup("#username") != null);
+        assertEquals(false, FxHarness.onFx(() -> ui.session().isOpen()));
+    }
+
+    private Scene dialogScene() {
+        return javafx.stage.Window.getWindows().stream()
+                .filter(w -> w != stage && w.getScene() != null && w.getScene().getRoot() instanceof javafx.scene.control.DialogPane)
+                .map(javafx.stage.Window::getScene).findFirst().orElse(null);
+    }
+
+    @Test
+    void entrega3MenuRecepcionYCaja() throws Exception {
+        Scene recepcion = signIn(staff(), "rocio");
+        assertEquals(List.of("nav-tablero", "nav-cobro", "nav-venta", "nav-socios", "nav-inventario"), navIds(recepcion));
+        assertEquals("Tablero", text(recepcion, "titulo-pagina"));
+        captureAll("entrega-3", "tablero-recepcion");
+        closeWindow();
+
+        Scene caja = signIn(staff(), "carlos");
+        assertEquals(List.of("nav-cobro", "nav-venta", "nav-socios"), navIds(caja));
+        assertEquals("Cobrar membresía", text(caja, "titulo-pagina"), "Caja no ve el tablero: empieza en Cobrar");
+        assertEquals("nav-cobro", FxHarness.focusOwner(caja));
+        assertEquals("Carlos Ruiz", text(caja, "userName"));
+        assertEquals("Caja · carlos", text(caja, "userRole"));
+        captureAll("entrega-3", "cobro-caja");
+        stage = null;
+        closeWindowIfOpen();
+    }
+
+    private void closeWindowIfOpen() throws Exception {
+        FxHarness.runFx(() -> javafx.stage.Window.getWindows().stream()
+                .filter(w -> w instanceof Stage).map(w -> (Stage) w).toList().forEach(Stage::close));
+    }
+
+    /** Una lista desplegable con el CSS de la app: la lista abierta toma el tema del control que la abre. */
+    @Test
+    void entrega3ListaDesplegable() throws Exception {
+        themes = UiFakes.themes(Themes.Theme.CLARO);
+        FxHarness.runFx(dev.gimnasio.sistemagimnasio.ui.common.Fonts::load);
+        FxHarness.runFx(themes::installOnNewWindows);
+        for (Themes.Theme theme : Themes.Theme.values()) {
+            FxHarness.runFx(() -> themes.set(theme));
+            Stage owner = FxHarness.onFx(() -> {
+                var combo = new javafx.scene.control.ComboBox<String>(javafx.collections.FXCollections.observableArrayList(
+                        "Efectivo", "Tarjeta de débito", "Tarjeta de crédito", "Transferencia"));
+                combo.setId("combo");
+                combo.getSelectionModel().select(1);
+                combo.setPrefWidth(260);
+                var label = new javafx.scene.control.Label("Método de pago");
+                label.getStyleClass().add("etiqueta");
+                var box = new javafx.scene.layout.VBox(6, label, combo);
+                box.setPadding(new javafx.geometry.Insets(24));
+                box.setStyle("-fx-background-color: -gd-superficie;");
+                Stage created = new Stage();
+                Scene scene = new Scene(box, 320, 260);
+                scene.getStylesheets().add(AppWindow.stylesheet());
+                created.setScene(scene);
+                created.show();
+                combo.show();
+                return created;
+            });
+            FxHarness.settle();
+            Scene popup = FxHarness.onFx(() -> javafx.stage.Window.getWindows().stream()
+                    .filter(w -> w instanceof javafx.stage.PopupWindow).map(javafx.stage.Window::getScene)
+                    .findFirst().orElseThrow());
+            assertEquals(true, FxHarness.onFx(() -> owner.getScene().getRoot().getStyleClass().contains(theme.styleClass())));
+            FxHarness.capture(owner.getScene(), OUT.resolve("entrega-3").resolve("lista-control-" + theme.name().toLowerCase() + ".png"));
+            FxHarness.capture(popup, OUT.resolve("entrega-3").resolve("lista-abierta-" + theme.name().toLowerCase() + ".png"));
+            FxHarness.runFx(owner::close);
+        }
     }
 
     /** Todos los iconos en ambos temas, para revisar que la conversión de Lucide a SVGPath dibuja bien. */
     @Test
     void entrega1Iconos() throws Exception {
         themes = UiFakes.themes(Themes.Theme.CLARO);
+        FxHarness.runFx(dev.gimnasio.sistemagimnasio.ui.common.Fonts::load);
         for (Themes.Theme theme : Themes.Theme.values()) {
             Scene scene = FxHarness.onFx(() -> {
                 javafx.scene.layout.FlowPane grid = new javafx.scene.layout.FlowPane(18, 18);

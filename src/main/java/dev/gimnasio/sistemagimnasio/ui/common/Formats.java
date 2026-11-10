@@ -40,6 +40,13 @@ public final class Formats {
         return DATE_TIME.format(dateTime);
     }
 
+    /** «lun 9 nov 2026», como la fecha de la cabecera del prototipo. */
+    public static String mediumDate(LocalDate date) {
+        String day = date.getDayOfWeek().getDisplayName(java.time.format.TextStyle.FULL, LOCALE);
+        String month = date.getMonth().getDisplayName(java.time.format.TextStyle.FULL, LOCALE);
+        return day.substring(0, 3) + " " + date.getDayOfMonth() + " " + month.substring(0, 3) + " " + date.getYear();
+    }
+
     /** «Lunes 9 de noviembre de 2026», para encabezados. */
     public static String longDate(LocalDate date) {
         String text = LONG_DATE.format(date);

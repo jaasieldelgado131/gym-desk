@@ -20,7 +20,10 @@ Launcher ─▶ App (JavaFX Application) ─▶ GymDeskUi ─▶ pantalla de arr
 |---|---|
 | `ui/GymDeskUi` | Entrada de la capa: abre la ventana y decide qué pantalla se muestra. |
 | `ui/common/` | Piezas compartidas: `Background` (casos de uso fuera del hilo de JavaFX), `ErrorReport` y `FieldErrors` (errores según el contrato), `Session`, `Formats` e `Inputs` (formato y lectura de importes y fechas), `Dialogs`, `FxmlView`, `AppWindow`, `UseCases`. |
-| `ui/<pantalla>/` | Una carpeta por pantalla: controlador y, cuando hay formulario, su ViewModel. |
+| `ui/startup/` | Pantalla de arranque: conexión, migraciones y reintento. |
+| `ui/login/` | Acceso: `LoginController` y `LoginViewModel`. |
+| `ui/shell/` | Menú lateral y cabecera (`ShellController`), secciones y permisos (`Route`, `Navigation`) y el aviso de las secciones pendientes (`PendingView`). |
+| `ui/<pantalla>/` | Cada pantalla de negocio tendrá su carpeta: controlador y, cuando hay formulario, su ViewModel. |
 | `resources/fxml/` | Vistas FXML, sin `fx:controller`: el controlador se construye con sus dependencias y se pasa a `FxmlView.load`. |
 | `resources/css/app.css` | Tema de la app. |
 
@@ -134,3 +137,27 @@ Con JDK 26.0.2, Docker 29.0.3 y PostgreSQL 16 de `docker-compose.yml`:
 | Teclado | Enter envía desde Usuario y desde Contraseña. Con campos vacíos el foco va a Usuario; con credenciales incorrectas, a Contraseña. Enter y clic repetidos durante la revisión no envían otra vez. Cerrar sesión vuelve al acceso con la contraseña vacía |
 | Con PostgreSQL y Argon2 | `crear-admin-dev.sh` creó un administrador con hash `$argon2id$v=19$m=65536,t=3,p=1`; `Authenticate` con `PostgresUserRepository` lo aceptó con su contraseña y rechazó una incorrecta. El script rechaza un usuario con espacios y una contraseña corta. El usuario de prueba se borró después |
 | App real | Arranca, migra y muestra el acceso con la base de desarrollo |
+
+### Fase 1 · Entrega 3: menú, cabecera y permisos (10/11/2026)
+
+Tras entrar se muestra el menú lateral y la cabecera del prototipo. Las secciones y sus grupos son los del prototipo (Tablero; Mostrador: Cobrar membresía, Punto de venta; Socios; Catálogo: Planes, Productos, Inventario; Administración: Usuarios, Configuración) y cada rol ve solo las que permite `Role.permissions()`. Empieza en Tablero si el rol lo puede ver y, si no, en Cobrar membresía. Ocultar una sección es solo presentación: los casos de uso vuelven a revisar el permiso.
+
+Ninguna pantalla de negocio está implementada. Cada sección muestra su título y un aviso:
+
+- **«Esta sección todavía no funciona»** con los casos de uso que faltan (Tablero, Cobrar membresía, Punto de venta, Socios, Productos, Inventario, Usuarios).
+- **«Pantalla en preparación»** con los casos de uso que ya existen (Planes, Configuración). En Configuración, categorías de producto y motivos de inventario siguen siendo de la fase 2.
+- La búsqueda global de socios se muestra con la etiqueta **«Pendiente»** y no se puede usar: falta `SearchMembers`.
+
+No se usan datos simulados. La fecha de la cabecera sale de `GetGymInfo` (reloj del sistema) y se vuelve a leer al entrar. Las cuentas de demostración y las herramientas del prototipo para cambiar la fecha, simular lentitud o errores y restablecer datos no forman parte del producto.
+
+| Comprobación | Resultado |
+|---|---|
+| `NavigationTest` (6) | Grupos y secciones de Administrador, Recepción y Caja; un grupo sin secciones visibles no aparece; sección inicial por rol; solo Planes y Configuración tienen ya sus casos de uso |
+| `FormatsTest` | Fecha de la cabecera «mar 10 nov 2026», «mié 2 sep 2026», «sáb 1 ago 2026» |
+| Capturas en ambos temas y tamaños | `tablero-administrador`, `configuracion-administrador`, `tablero-recepcion`, `cobro-caja`, `menu-desplazado-claro-1024` |
+| Diálogo y lista desplegable | `dialogo-atajos-{claro,oscuro}`: el diálogo cambia de tema mientras está abierto. `lista-control-*` y `lista-abierta-*`: la lista abierta toma los colores y la fuente del tema |
+| Teclado | Al entrar, el foco está en la sección inicial. Tab: secciones del menú en orden → Cerrar sesión → selector de tema → atajos → vuelta al menú (la búsqueda pendiente no es una parada). Espacio y Enter abren la sección con el foco, que se queda en el menú. «?» abre los atajos (salvo escribiendo en un campo) y Esc los cierra. Cerrar sesión con el teclado vuelve al acceso |
+| Ventana al mínimo (1024 × 680) | Las secciones del administrador no caben: la lista se desplaza con barra visible, la sesión y Cerrar sesión quedan siempre a la vista y la sección con el foco se desplaza hasta verse |
+| Suite completa (`-Dapi.version=1.40`) | 479 pruebas: 0 fallos, 0 errores; 6 omitidas (`CapturasUiTest`, que corre aparte con `-Dui.capturas=true`: 6 de 6) |
+
+El paso completo «escribir credenciales en la ventana real» no se automatizó contra PostgreSQL: el arnés usa la UI real con repositorios en memoria y, por separado, se comprobó `Authenticate` con PostgreSQL y Argon2 (entrega 2).

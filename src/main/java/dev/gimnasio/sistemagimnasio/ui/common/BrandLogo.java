@@ -45,8 +45,8 @@ public final class BrandLogo {
         return box;
     }
 
-    /** «Mi gimnasio» → «MG»; «Fuerza» → «FU». */
-    static String initials(String name) {
+    /** «Mi gimnasio» → «MG»; «Fuerza» → «FU». También para el avatar de la sesión. */
+    public static String initials(String name) {
         if (name == null || name.isBlank()) {
             return "G";
         }

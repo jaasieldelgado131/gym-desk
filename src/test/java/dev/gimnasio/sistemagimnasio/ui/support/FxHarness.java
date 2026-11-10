@@ -54,6 +54,11 @@ public final class FxHarness {
         return result.get(15, TimeUnit.SECONDS);
     }
 
+    /** Para condiciones de {@link #waitUntil}, que ya corren en el hilo de JavaFX. */
+    public static <T> T onFxUnchecked(java.util.function.Supplier<T> work) {
+        return work.get();
+    }
+
     public static void runFx(Runnable work) throws Exception {
         onFx(() -> {
             work.run();
@@ -113,6 +118,27 @@ public final class FxHarness {
             Event.fireEvent(target, new KeyEvent(KeyEvent.KEY_RELEASED, "", "", key, shift, false, false, false));
         });
         settle();
+    }
+
+    /**
+     * Como {@link #press}, pero sin esperar: para teclas que abren un diálogo modal ({@code showAndWait}
+     * deja el hilo de JavaFX en un ciclo anidado hasta que se cierra).
+     */
+    public static void pressLater(Scene scene, KeyCode key) {
+        Platform.runLater(() -> {
+            Node target = scene.getFocusOwner() != null ? scene.getFocusOwner() : scene.getRoot();
+            Event.fireEvent(target, new KeyEvent(KeyEvent.KEY_PRESSED, "", "", key, false, false, false, false));
+            Event.fireEvent(target, new KeyEvent(KeyEvent.KEY_RELEASED, "", "", key, false, false, false, false));
+        });
+    }
+
+    /** Escribe un carácter sobre el control con el foco, sin esperar (ver {@link #pressLater}). */
+    public static void typeLater(Scene scene, String character) {
+        Platform.runLater(() -> {
+            Node target = scene.getFocusOwner() != null ? scene.getFocusOwner() : scene.getRoot();
+            Event.fireEvent(target, new KeyEvent(KeyEvent.KEY_TYPED, character, "", KeyCode.UNDEFINED,
+                    false, false, false, false));
+        });
     }
 
     /** Id del control con el foco, o su clase si no tiene id. */
