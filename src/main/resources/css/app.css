@@ -656,3 +656,89 @@
     -fx-text-fill: -gd-texto-2;
 }
 .atajos-lista .label.kbd { -fx-font-size: 11.5px; }
+
+/* ------------------------------------------------------------------ */
+/* Formularios de pantalla (ui.settings y las que siguen)              */
+/* ------------------------------------------------------------------ */
+.etiqueta-fila { -fx-spacing: 8; -fx-alignment: baseline-left; }
+.opcional { -fx-font-size: 12.5px; -fx-text-fill: -gd-texto-3; }
+
+.button.texto-peligro {
+    -fx-text-fill: -gd-peligro;
+    -fx-background-color: transparent;
+    -fx-padding: 0 8;
+}
+.button.texto-peligro:hover { -fx-background-color: -gd-peligro-fondo; }
+.button.texto-peligro:focus-visible {
+    -fx-background-color: -gd-foco, -gd-superficie;
+    -fx-background-insets: -3, -1;
+    -fx-background-radius: 13, 11;
+}
+/* Un botón que hace de campo (por ejemplo «Subir imagen») con error */
+.button.invalid {
+    -fx-background-color: -gd-error-anillo, -gd-peligro, -gd-superficie;
+    -fx-background-insets: -3, 0, 1;
+    -fx-background-radius: 13, 10, 9;
+}
+
+.combo-box-base.invalid {
+    -fx-background-color: -gd-error-anillo, -gd-peligro, -gd-entrada-fondo;
+    -fx-background-insets: -3, 0, 1;
+    -fx-background-radius: 13, 10, 9;
+}
+.combo-box-base:disabled { -fx-opacity: 1; -fx-background-color: -gd-linea, -gd-superficie-2; }
+.combo-box-base:disabled .list-cell { -fx-text-fill: -gd-texto-2; }
+.combo-box-base:disabled .arrow { -fx-background-color: -gd-texto-3; }
+
+.cargando { -fx-padding: 22 24; -fx-spacing: 12; -fx-alignment: center-left; }
+.progreso-chico { -fx-pref-width: 20; -fx-pref-height: 20; -fx-max-width: 20; -fx-max-height: 20; }
+
+/* Configuración: título y explicación a la izquierda, campos a la derecha */
+.config-seccion { -fx-padding: 22 24; -fx-hgap: 24; }
+.config-seccion-siguiente {
+    -fx-border-color: -gd-linea transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+.config-cab { -fx-spacing: 4; }
+.config-campos { -fx-spacing: 16; }
+.fila-campos { -fx-hgap: 16; -fx-vgap: 14; }
+.logo-vista { -fx-alignment: center-left; }
+.marca-previa {
+    -fx-background-color: -gd-superficie-2;
+    -fx-background-radius: 12;
+    -fx-border-color: -gd-linea-fuerte;
+    -fx-border-style: segments(4, 3);
+    -fx-border-radius: 12;
+    -fx-padding: 12 14;
+    -fx-spacing: 12;
+    -fx-alignment: center-left;
+}
+
+/* Barra «Tienes cambios sin guardar»: fija abajo, sobre el contenido */
+.capa-pie { -fx-padding: 0 28 16 28; -fx-alignment: bottom-center; }
+.barra-guardar {
+    -fx-background-color: -gd-riel-filo, -gd-capsula;
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 16, 15;
+    -fx-padding: 10 10 10 18;
+    -fx-spacing: 8;
+    -fx-max-width: 1424;
+    -fx-effect: dropshadow(gaussian, -gd-sombra-flotante, 34, 0, 0, 14);
+}
+.espacio-barra { -fx-min-height: 64; -fx-pref-height: 64; }
+
+/* Avisos flotantes (abajo a la derecha) */
+.avisos { -fx-padding: 20; -fx-spacing: 10; -fx-alignment: bottom-right; }
+.aviso-flotante {
+    -fx-background-color: -gd-riel-filo, -gd-capsula;
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 16, 15;
+    -fx-padding: 12 16;
+    -fx-spacing: 10;
+    -fx-alignment: center-left;
+    -fx-max-width: 420;
+    -fx-effect: dropshadow(gaussian, -gd-sombra-flotante, 34, 0, 0, 14);
+}
+.aviso-flotante .label { -fx-font-family: "Instrument Sans Medium"; -fx-font-size: 13.5px; }
+.aviso-flotante .icono { -fx-stroke: -gd-ok; }
+.aviso-flotante.es-error .icono { -fx-stroke: -gd-peligro; }
