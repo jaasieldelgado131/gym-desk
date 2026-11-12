@@ -198,7 +198,7 @@ Sin permiso: es lo que abre la sesión.
 | El usuario no existe o la contraseña no coincide | `AuthenticationException` | Usuario o contraseña incorrectos. Revísalos e inténtalo de nuevo. |
 | Credenciales correctas, pero el usuario está desactivado | `AuthenticationException` | Tu usuario está desactivado. Pide a un administrador que lo active. |
 
-Los dos campos vacíos se reportan juntos. Usuario inexistente y contraseña incorrecta dan el mismo mensaje para no revelar qué nombres de usuario existen.
+Los dos campos vacíos se reportan juntos. Usuario inexistente y contraseña incorrecta dan el mismo mensaje y tardan lo mismo, para no revelar qué nombres de usuario existen: con un usuario inexistente también se verifica la contraseña, contra un hash de relleno.
 
 **Cerrar sesión** no es un caso de uso: la UI descarta el `actor` y vuelve al login.
 
