@@ -7,11 +7,14 @@ import dev.gimnasio.sistemagimnasio.ui.common.AppWindow;
 import dev.gimnasio.sistemagimnasio.ui.common.Background;
 import dev.gimnasio.sistemagimnasio.ui.common.ErrorReport;
 import dev.gimnasio.sistemagimnasio.ui.common.FxmlView;
+import dev.gimnasio.sistemagimnasio.ui.common.Notifier;
 import dev.gimnasio.sistemagimnasio.ui.common.Session;
 import dev.gimnasio.sistemagimnasio.ui.common.Themes;
 import dev.gimnasio.sistemagimnasio.ui.common.UseCases;
 import dev.gimnasio.sistemagimnasio.ui.login.LoginController;
 import dev.gimnasio.sistemagimnasio.ui.login.LoginViewModel;
+import dev.gimnasio.sistemagimnasio.ui.settings.PaymentMethodsController;
+import dev.gimnasio.sistemagimnasio.ui.settings.PaymentMethodsViewModel;
 import dev.gimnasio.sistemagimnasio.ui.settings.SettingsController;
 import dev.gimnasio.sistemagimnasio.ui.settings.SettingsViewModel;
 import dev.gimnasio.sistemagimnasio.ui.shell.Route;
@@ -41,6 +44,23 @@ public final class GymDeskUi implements AutoCloseable {
     private Background background;
     private ShellController shell;
     private Function<Window, File> logoChooser = SettingsController::chooseImage;
+    private PaymentMethodsController paymentMethods;
+    /** Los avisos van al menú de la sesión abierta. */
+    private final Notifier notifier = new Notifier() {
+        @Override
+        public void ok(String message) {
+            if (shell != null) {
+                shell.ok(message);
+            }
+        }
+
+        @Override
+        public void error(String message) {
+            if (shell != null) {
+                shell.error(message);
+            }
+        }
+    };
 
     /** @param connector conecta con la base y arma los casos de uso; se llama fuera del hilo de JavaFX */
     public GymDeskUi(Stage stage, Callable<UseCases> connector) {
@@ -70,6 +90,11 @@ public final class GymDeskUi implements AutoCloseable {
     /** Cambia el selector de archivos del logotipo (en pruebas, sin abrir el del sistema). */
     public void useLogoChooser(Function<Window, File> chooser) {
         this.logoChooser = Objects.requireNonNull(chooser, "chooser");
+    }
+
+    /** El panel de métodos de pago de la última Configuración abierta, o {@code null} (pruebas). */
+    public PaymentMethodsController paymentMethods() {
+        return paymentMethods;
     }
 
     /** El menú de la sesión abierta, o {@code null}. */
@@ -133,7 +158,11 @@ public final class GymDeskUi implements AutoCloseable {
         // Se consulta en cada clic: así se puede cambiar el selector con la pantalla ya abierta.
         var controller = new SettingsController(model, owner -> logoChooser.apply(owner));
         FxmlView.load("settings", controller);
+        var methods = new PaymentMethodsViewModel(useCases, background, session::actor, notifier);
+        paymentMethods = new PaymentMethodsController(methods);
+        controller.addPanel(paymentMethods.view());
         model.load();
+        methods.load();
         return new Screen(controller.view(), controller.saveBar(), model::hasUnsavedChanges);
     }
 

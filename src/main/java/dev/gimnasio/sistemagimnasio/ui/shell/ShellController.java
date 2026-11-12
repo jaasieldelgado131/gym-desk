@@ -6,6 +6,7 @@ import dev.gimnasio.sistemagimnasio.ui.common.BrandLogo;
 import dev.gimnasio.sistemagimnasio.ui.common.Dialogs;
 import dev.gimnasio.sistemagimnasio.ui.common.Formats;
 import dev.gimnasio.sistemagimnasio.ui.common.Icons;
+import dev.gimnasio.sistemagimnasio.ui.common.Notifier;
 import dev.gimnasio.sistemagimnasio.ui.common.ThemeSelector;
 import dev.gimnasio.sistemagimnasio.ui.common.Themes;
 import javafx.animation.PauseTransition;
@@ -36,7 +37,7 @@ import java.util.function.Function;
  * arma {@code screens}; las demás muestran qué les falta. Si la pantalla actual tiene cambios sin guardar,
  * cambiar de sección o cerrar sesión pide confirmación.
  */
-public final class ShellController {
+public final class ShellController implements Notifier {
     private static final PseudoClass CURRENT = PseudoClass.getPseudoClass("actual");
     private Duration toastTime = Duration.seconds(5);
 
@@ -222,13 +223,30 @@ public final class ShellController {
         gymName.setText(info.gymName());
     }
 
+    @Override
+    public void ok(String message) {
+        showToast(message);
+    }
+
+    @Override
+    public void error(String message) {
+        showToast(message, true);
+    }
+
     /** Aviso flotante abajo a la derecha, como el del prototipo; se quita solo a los pocos segundos. */
     public void showToast(String message) {
+        showToast(message, false);
+    }
+
+    private void showToast(String message, boolean failure) {
         Label text = new Label(message);
         text.setWrapText(true);
-        HBox toast = new HBox(Icons.icon("check"), text);
+        HBox toast = new HBox(Icons.icon(failure ? "alerta" : "check"), text);
         toast.getStyleClass().add("aviso-flotante");
-        toast.setId("aviso");
+        if (failure) {
+            toast.getStyleClass().add("es-error");
+        }
+        toast.setId(failure ? "aviso-error" : "aviso");
         toast.setMaxWidth(420);
         toast.setAccessibleText(message);
         toastLayer.getChildren().add(toast);

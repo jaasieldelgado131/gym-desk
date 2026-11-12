@@ -19,11 +19,11 @@ Launcher ─▶ App (JavaFX Application) ─▶ GymDeskUi ─▶ pantalla de arr
 | Paquete / recurso | Qué contiene |
 |---|---|
 | `ui/GymDeskUi` | Entrada de la capa: abre la ventana y decide qué pantalla se muestra. |
-| `ui/common/` | Piezas compartidas: `Background` (casos de uso fuera del hilo de JavaFX), `ErrorReport` y `FieldErrors` (errores según el contrato), `Session`, `Formats` e `Inputs` (formato y lectura de importes y fechas), `Dialogs`, `FxmlView`, `AppWindow`, `UseCases`. |
+| `ui/common/` | Piezas compartidas: `Background` (casos de uso fuera del hilo de JavaFX), `ErrorReport` y `FieldErrors` (errores según el contrato), `Session`, `Formats` e `Inputs` (formato y lectura de importes y fechas), `Dialogs`, `FormDialog` (diálogo con formulario que no se cierra hasta que el caso de uso responde bien), `DataTable` (tabla de catálogo con botones de acción por fila), `StatusTag` (etiqueta de estado con color y punto), `Notifier` (avisos flotantes), `FxmlView`, `AppWindow`, `UseCases`. |
 | `ui/startup/` | Pantalla de arranque: conexión, migraciones y reintento. |
 | `ui/login/` | Acceso: `LoginController` y `LoginViewModel`. |
 | `ui/shell/` | Menú lateral y cabecera (`ShellController`), secciones y permisos (`Route`, `Navigation`), la pantalla de cada sección que funciona (`Screen`), el aviso de las secciones pendientes (`PendingView`), los avisos flotantes y la confirmación al salir con cambios sin guardar. |
-| `ui/settings/` | Configuración: `SettingsController` y `SettingsViewModel`. |
+| `ui/settings/` | Configuración: `SettingsController` y `SettingsViewModel` (el formulario), `PaymentMethodsController` y `PaymentMethodsViewModel` (el catálogo de métodos de pago). |
 | `ui/<pantalla>/` | Cada pantalla de negocio tiene su carpeta: controlador y, cuando hay formulario, su ViewModel. `GymDeskUi.screenFor` decide qué secciones ya tienen pantalla. |
 | `resources/fxml/` | Vistas FXML, sin `fx:controller`: el controlador se construye con sus dependencias y se pasa a `FxmlView.load`. |
 | `resources/css/app.css` | Tema de la app. |
@@ -189,3 +189,31 @@ Planes pasa a ser la única sección con «Pantalla en preparación»; la captur
 | Suite completa (`-Dapi.version=1.40`) | 501 pruebas: 0 fallos, 0 errores; 8 omitidas (`CapturasUiTest`, que corre aparte con `-Dui.capturas=true`: 8 de 8) |
 
 Durante la revisión de las capturas se corrigieron: los botones del logotipo recortados a 1024 × 680 y la columna de títulos, que medía distinto en cada sección.
+
+### Fase 2 · Entrega 2: Configuración, métodos de pago (12/11/2026)
+
+Configuración suma el panel «Métodos de pago» con `ListPaymentMethods`, `CreatePaymentMethod`, `UpdatePaymentMethod`, `SetPaymentMethodActive` y `DeletePaymentMethod`.
+
+- **Panel propio, aparte de «Guardar cambios».** En el prototipo los métodos son etiquetas que se guardan con el formulario; según el contrato, cada operación se guarda al momento en su transacción. Para no confundir, van en su panel y lo dice: «Los cambios de esta lista se aplican al momento».
+- **Lista:** activos e inactivos por nombre; el efectivo lleva «Pide el efectivo recibido y calcula el cambio»; estado con etiqueta (texto, color y punto); filas inactivas atenuadas. Cada fila tiene **Editar**, **Desactivar** / **Activar** y **Eliminar**.
+- **Agregar y editar** en un diálogo (nombre y «Es efectivo»). Enter envía y Esc cancela; el diálogo no se cierra con un error: «Ya existe uno con ese nombre.» o «No puedes cambiar si «Efectivo» es efectivo…» quedan en su campo con el foco. Mientras guarda, nada se puede pulsar.
+- **Desactivar y activar** al momento, con aviso; el foco se queda en la misma fila. «Deja al menos un método de pago.» llega como aviso de error.
+- **Eliminar** pide confirmación (abre en «Cancelar»). Uno ya usado se rechaza con el mensaje del caso de uso, que sugiere desactivarlo.
+- **Si otro usuario lo cambió** (`NotFoundException`), se avisa y la lista se recarga.
+- **Avisos flotantes** de éxito y de error (`Notifier`), abajo a la derecha como en el prototipo.
+
+Piezas comunes nuevas para las siguientes pantallas: `DataTable`, `StatusTag`, `FormDialog`, `Notifier`, `Dialogs.confirmDanger` y los estilos de tabla, etiquetas de estado y casillas.
+
+| Comprobación | Resultado |
+|---|---|
+| `PaymentMethodsViewModelTest` (17) | Carga con inactivos; agregar (cierra, avisa y aparece en su lugar); nombre repetido o vacío en su campo; editar; cambiar «es efectivo» de uno usado; cancelar; desactivar y activar; último activo; eliminar sin uso y usado; borrado por otro usuario al actuar y al editar; sin permiso; carga fallida; acciones y envíos repetidos ignorados; la lista sigue avisando sus cambios después de recolectar basura |
+| Capturas en ambos temas y tamaños | `metodos-de-pago`, `agregado`, `eliminar-rechazado`; diálogos `dialogo-agregar`, `dialogo-error` y `confirmar-eliminar` en claro y oscuro |
+| Teclado | Tab: «Agregar método» → Editar → Desactivar → Eliminar de cada fila, en orden. El diálogo abre con el foco en Nombre; Enter envía, el foco va al campo con error y Esc cancela. Espacio desactiva y el foco sigue en la fila. La confirmación de borrado abre en «Cancelar» |
+| Suite completa (`-Dapi.version=1.40`) | 519 pruebas: 0 fallos, 0 errores; 9 omitidas (`CapturasUiTest`, que corre aparte: 9 de 9) |
+
+Al revisar las capturas y las pruebas se corrigieron:
+
+- **La tabla no se actualizaba tras agregar.** `items()` devolvía una vista de solo lectura nueva en cada llamada; esa vista escucha la lista con una referencia débil y, al recolectarse, la pantalla dejaba de recibir cambios. Ahora es una sola vista, con una prueba que falla con el código anterior.
+- **Alineación de las filas.** El nombre quedaba arriba en las filas sin descripción.
+- **Ayuda de «Es efectivo» recortada** en el diálogo.
+- **Moneda recortada a 1024 × 680** («MXN · Peso mexica…»): la columna de la moneda es un poco más ancha que la del prefijo.

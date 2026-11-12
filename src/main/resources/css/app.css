@@ -742,3 +742,77 @@
 .aviso-flotante .label { -fx-font-family: "Instrument Sans Medium"; -fx-font-size: 13.5px; }
 .aviso-flotante .icono { -fx-stroke: -gd-ok; }
 .aviso-flotante.es-error .icono { -fx-stroke: -gd-peligro; }
+
+/* Paneles de catálogo: encabezado con acción y tabla a todo el ancho */
+.panel-cab { -fx-padding: 18 20 14 20; }
+.panel-catalogo > .cargando { -fx-padding: 6 20 20 20; }
+
+/* Tabla (ui.common.DataTable) */
+.tabla-cab {
+    -fx-background-color: -gd-linea, -gd-superficie-2;
+    -fx-background-insets: 0, 1 0 1 0;
+    -fx-padding: 9 12;
+}
+.tabla-cab > .label { -fx-font-family: "Instrument Sans Medium"; -fx-font-size: 12.5px; -fx-text-fill: -gd-texto-2; }
+.tabla-celda {
+    -fx-background-color: -gd-superficie-3, -gd-superficie;
+    -fx-background-insets: 0, 0 0 1 0;
+    -fx-padding: 10 12;
+}
+.tabla-celda.ultima-fila { -fx-background-color: -gd-superficie; -fx-background-insets: 0; -fx-background-radius: 0; }
+.tabla-celda.ultima-fila.primera-columna { -fx-background-radius: 0 0 0 13; }
+.tabla-celda.ultima-fila.ultima-columna { -fx-background-radius: 0 0 13 0; }
+.primera-columna { -fx-padding: 10 12 10 20; }
+.tabla-cab.primera-columna { -fx-padding: 9 12 9 20; }
+.ultima-columna { -fx-padding: 10 20 10 12; }
+.tabla-cab.ultima-columna { -fx-padding: 9 20 9 12; }
+.tabla-celda .label { -fx-font-size: 13.5px; }
+.celda-principal { -fx-font-family: "Instrument Sans SemiBold"; }
+.tabla-celda .label.celda-detalle { -fx-font-size: 12.5px; -fx-text-fill: -gd-texto-3; }
+.fila-inactiva .label.celda-principal { -fx-text-fill: -gd-texto-3; }
+.tabla-vacia { -fx-padding: 24 20; }
+
+/* Etiquetas de estado (ui.common.StatusTag): texto, color y punto */
+.label.estado {
+    -fx-font-family: "Instrument Sans SemiBold";
+    -fx-font-size: 12.5px;
+    -fx-background-radius: 999;
+    -fx-padding: 3 9 3 8;
+    -fx-graphic-text-gap: 6;
+}
+.estado-activo, .estado-ok { -fx-background-color: -gd-ok-fondo; -fx-text-fill: -gd-ok; }
+.estado-activo .estado-punto, .estado-ok .estado-punto { -fx-fill: -gd-ok; }
+.estado-inactivo { -fx-background-color: -gd-neutro-fondo; -fx-text-fill: -gd-neutro; }
+.estado-inactivo .estado-punto { -fx-fill: -gd-neutro; }
+.estado-bajo { -fx-background-color: -gd-aviso-fondo; -fx-text-fill: -gd-aviso; }
+.estado-bajo .estado-punto { -fx-fill: -gd-aviso; }
+.estado-agotado { -fx-background-color: -gd-peligro-fondo; -fx-text-fill: -gd-peligro; }
+.estado-agotado .estado-punto { -fx-fill: -gd-peligro; }
+
+/* Casillas */
+.check-box { -fx-text-fill: -gd-texto; -fx-font-family: "Instrument Sans Medium"; -fx-font-size: 13.5px; -fx-label-padding: 0 0 0 8; }
+.check-box > .box {
+    -fx-background-color: -gd-linea-fuerte, -gd-entrada-fondo;
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 5, 4;
+    -fx-padding: 4;
+}
+.check-box:hover > .box { -fx-background-color: -gd-entrada-hover, -gd-entrada-fondo; }
+.check-box:selected > .box { -fx-background-color: -gd-acento; -fx-background-insets: 0; -fx-background-radius: 5; }
+.check-box > .box > .mark { -fx-background-color: transparent; }
+.check-box:selected > .box > .mark { -fx-background-color: -gd-sobre-acento; }
+.check-box:focus-visible > .box {
+    -fx-background-color: -gd-foco, -gd-superficie, -gd-linea-fuerte, -gd-entrada-fondo;
+    -fx-background-insets: -3, -1, 0, 1;
+    -fx-background-radius: 8, 6, 5, 4;
+}
+.check-box:selected:focus-visible > .box {
+    -fx-background-color: -gd-foco, -gd-superficie, -gd-acento;
+    -fx-background-insets: -3, -1, 0;
+    -fx-background-radius: 8, 6, 5;
+}
+.check-box.invalid > .box { -fx-background-color: -gd-peligro, -gd-entrada-fondo; }
+
+/* Diálogo con formulario (ui.common.FormDialog) */
+.dialogo-formulario > .content { -fx-padding: 18 22 18 22; }
+.formulario { -fx-spacing: 16; }

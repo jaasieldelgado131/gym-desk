@@ -44,6 +44,15 @@ public final class Dialogs {
         return alert.showAndWait().filter(button -> button.getButtonData() == ButtonBar.ButtonData.OK_DONE).isPresent();
     }
 
+    /** Como {@link #confirm(Window, String, String, String, String)}, con el botón de confirmar en rojo. */
+    public static boolean confirmDanger(Window owner, String title, String message, String confirmText) {
+        Alert alert = confirmation(owner, title, message, confirmText, "Cancelar");
+        alert.getDialogPane().getButtonTypes().stream()
+                .filter(type -> type.getButtonData() == ButtonBar.ButtonData.OK_DONE)
+                .forEach(type -> alert.getDialogPane().lookupButton(type).getStyleClass().add("peligro"));
+        return alert.showAndWait().filter(button -> button.getButtonData() == ButtonBar.ButtonData.OK_DONE).isPresent();
+    }
+
     /**
      * La confirmación sin mostrar, para poder abrirla sin bloquear (pruebas y capturas). Cancelar es el botón
      * predeterminado: Enter no confirma por accidente algo que se pierde.

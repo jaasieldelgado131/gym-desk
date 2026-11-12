@@ -597,4 +597,136 @@ class CapturasUiTest {
         });
         captureAll("fase-2-entrega-1", "moneda-bloqueada");
     }
+
+    // ---------- Fase 2 · Entrega 2: Configuración, métodos de pago ----------
+
+    private void fire(Scene scene, String id) throws Exception {
+        FxHarness.runFx(() -> ((javafx.scene.control.ButtonBase) scene.lookup("#" + id)).fire());
+        FxHarness.settle();
+    }
+
+    private void scrollToBottom(Scene scene) throws Exception {
+        FxHarness.runFx(() -> ((javafx.scene.control.ScrollPane) scene.lookup(".lienzo .scroll-pane")).setVvalue(1));
+        FxHarness.settle();
+    }
+
+    private static String toastText(Scene scene, String id) {
+        var toast = scene.lookup("#" + id);
+        return toast == null ? null : ((javafx.scene.control.Label) toast.lookup(".label")).getText();
+    }
+
+    /** Quita los avisos flotantes que siguen en pantalla, para que la siguiente captura muestre solo el nuevo. */
+    private void clearToasts(Scene scene) throws Exception {
+        FxHarness.runFx(() -> scene.getRoot().lookupAll(".aviso-flotante").stream().toList()
+                .forEach(n -> ((javafx.scene.layout.Pane) n.getParent()).getChildren().remove(n)));
+    }
+
+    private void captureDialog(String name) throws Exception {
+        for (Themes.Theme theme : Themes.Theme.values()) {
+            FxHarness.runFx(() -> themes.set(theme));
+            FxHarness.settle();
+            Scene dialog = FxHarness.onFx(this::dialogScene);
+            FxHarness.capture(dialog, OUT.resolve("fase-2-entrega-2").resolve(name + "-" + theme.name().toLowerCase() + ".png"));
+        }
+        FxHarness.runFx(() -> themes.set(Themes.Theme.CLARO));
+        FxHarness.settle();
+    }
+
+    @Test
+    void fase2Entrega2MetodosDePago() throws Exception {
+        UiFakes.Backend backend = new UiFakes.Backend(staff());
+        long efectivo = backend.methods.add("Efectivo", true, true).id();
+        long tarjeta = backend.methods.add("Tarjeta", false, true).id();
+        long transferencia = backend.methods.add("Transferencia", false, false).id();
+        backend.methods.markUsed(efectivo);
+        Scene scene = openSettings(backend);
+        FxHarness.runFx(() -> ui.shell().setToastTime(javafx.util.Duration.minutes(1)));
+        FxHarness.waitUntil("lista de métodos", () -> shown(scene, "mp-tabla"));
+        scrollToBottom(scene);
+        assertEquals("Pide el efectivo recibido y calcula el cambio",
+                FxHarness.onFx(() -> ((javafx.scene.control.Label) scene.lookup("#mp-tabla .celda-detalle")).getText()));
+        assertEquals("Activar", text(scene, "mp-estado-" + transferencia), "un inactivo se puede activar");
+        captureAll("fase-2-entrega-2", "metodos-de-pago");
+
+        // 1. Teclado: Tab recorre «Agregar método» y las acciones de cada fila, en orden.
+        FxHarness.runFx(() -> scene.lookup("#mp-agregar").requestFocus());
+        List<String> order = tabOrder(scene, 9);
+        System.out.println("[teclado] métodos de pago, Tab: " + order);
+        assertEquals(List.of("mp-agregar",
+                "mp-editar-" + efectivo, "mp-estado-" + efectivo, "mp-eliminar-" + efectivo,
+                "mp-editar-" + tarjeta, "mp-estado-" + tarjeta, "mp-eliminar-" + tarjeta,
+                "mp-editar-" + transferencia, "mp-estado-" + transferencia, "mp-eliminar-" + transferencia), order);
+
+        // 2. Agregar: el diálogo abre con el foco en Nombre; un nombre repetido se marca en su campo.
+        fire(scene, "mp-agregar");
+        FxHarness.waitUntil("diálogo de alta", () -> dialogScene() != null && dialogScene().getFocusOwner() != null
+                && "mp-nombre".equals(dialogScene().getFocusOwner().getId()));
+        Scene dialog = FxHarness.onFx(this::dialogScene);
+        captureDialog("dialogo-agregar");
+        typeInto(dialog, "mp-nombre", "tarjeta");
+        FxHarness.press(dialog, KeyCode.ENTER, false);
+        FxHarness.waitUntil("error de nombre", () -> dialog.lookup(".field-error") != null && dialog.lookup(".field-error").isVisible()
+                && !((javafx.scene.control.Label) dialog.lookup(".field-error")).getText().isEmpty());
+        assertEquals("Ya existe uno con ese nombre.", FxHarness.onFx(() -> ((javafx.scene.control.Label) dialog.lookup(".field-error")).getText()));
+        assertEquals("mp-nombre", FxHarness.focusOwner(dialog));
+        captureDialog("dialogo-error");
+
+        // Corregido y enviado con Enter: se cierra, avisa y aparece en su lugar (por nombre).
+        typeInto(dialog, "mp-nombre", "Vales de despensa");
+        FxHarness.press(dialog, KeyCode.ENTER, false);
+        FxHarness.waitUntil("diálogo cerrado", () -> dialogScene() == null);
+        FxHarness.waitUntil("fila nueva", () -> scene.lookup("#mp-editar-4") != null);
+        assertEquals("Se agregó «Vales de despensa». Ya se ofrece al cobrar y al vender.", FxHarness.onFx(() -> toastText(scene, "aviso")));
+        scrollToBottom(scene);
+        captureAll("fase-2-entrega-2", "agregado");
+        clearToasts(scene);
+
+        // 3. Editar: cambiar «es efectivo» en uno ya usado se rechaza en su campo; Esc cancela sin cambios.
+        fire(scene, "mp-editar-" + efectivo);
+        FxHarness.waitUntil("diálogo de edición", () -> dialogScene() != null);
+        Scene edit = FxHarness.onFx(this::dialogScene);
+        FxHarness.runFx(() -> ((javafx.scene.control.CheckBox) edit.lookup("#mp-efectivo")).setSelected(false));
+        FxHarness.runFx(() -> edit.lookup("#mp-nombre").requestFocus());
+        FxHarness.press(edit, KeyCode.ENTER, false);
+        FxHarness.waitUntil("error de efectivo", () -> edit.lookup("#mp-efectivo").getStyleClass().contains("invalid"));
+        assertEquals("mp-efectivo", FxHarness.focusOwner(edit));
+        FxHarness.pressLater(edit, KeyCode.ESCAPE);
+        FxHarness.waitUntil("edición cancelada", () -> dialogScene() == null);
+        assertEquals(true, backend.methods.get(efectivo).cash());
+
+        // 4. Desactivar al momento, con aviso; el foco se queda en la misma fila («Activar»).
+        FxHarness.runFx(() -> scene.lookup("#mp-estado-" + tarjeta).requestFocus());
+        FxHarness.press(scene, KeyCode.SPACE, false);
+        FxHarness.waitUntil("desactivado", () -> "Activar".equals(((javafx.scene.control.Button) scene.lookup("#mp-estado-" + tarjeta)).getText()));
+        assertEquals(false, backend.methods.get(tarjeta).active());
+        assertEquals("mp-estado-" + tarjeta, FxHarness.focusOwner(scene));
+
+        clearToasts(scene);
+
+        // 5. Eliminar pide confirmación; uno ya usado se rechaza con el mensaje del caso de uso.
+        FxHarness.runFx(() -> scene.lookup("#mp-eliminar-" + efectivo).requestFocus());
+        FxHarness.pressLater(scene, KeyCode.SPACE);
+        FxHarness.waitUntil("confirmación de borrado", () -> dialogWithButton("Eliminar") != null);
+        assertEquals("Cancelar", FxHarness.onFx(() -> {
+            var owner = dialogScene().getFocusOwner();
+            return owner instanceof javafx.scene.control.Button b ? b.getText() : String.valueOf(owner);
+        }), "la confirmación abre en Cancelar");
+        captureDialog("confirmar-eliminar");
+        clickInDialog(FxHarness.onFx(() -> dialogWithButton("Eliminar")), "Eliminar");
+        FxHarness.waitUntil("aviso de error", () -> toastText(scene, "aviso-error") != null);
+        assertEquals("No puedes eliminar «Efectivo»: ya se usó en cobros o ventas. Desactívalo para dejar de ofrecerlo.",
+                FxHarness.onFx(() -> toastText(scene, "aviso-error")));
+        scrollToBottom(scene);
+        captureAll("fase-2-entrega-2", "eliminar-rechazado");
+
+        // Uno sin uso sí se elimina.
+        FxHarness.runFx(() -> scene.lookup("#mp-eliminar-" + transferencia).requestFocus());
+        FxHarness.pressLater(scene, KeyCode.SPACE);
+        FxHarness.waitUntil("confirmación de borrado", () -> dialogWithButton("Eliminar") != null);
+        clickInDialog(FxHarness.onFx(() -> dialogWithButton("Eliminar")), "Eliminar");
+        FxHarness.waitUntil("fila quitada", () -> scene.lookup("#mp-editar-" + transferencia) == null);
+        assertEquals(null, backend.methods.get(transferencia));
+        System.out.println("[teclado] métodos de pago: Enter envía el diálogo; foco al campo con error; Esc cancela; "
+                + "Espacio desactiva y el foco sigue en la fila; la confirmación de borrado abre en Cancelar");
+    }
 }

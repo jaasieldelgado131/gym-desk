@@ -157,10 +157,11 @@
             <VBox styleClass="config-cab" GridPane.columnIndex="0">
                 <Label text="Cobros y folios" styleClass="titulo-16"/>
             </VBox>
+            <!-- La moneda lleva un poco más de ancho para que «MXN · Peso mexicano» quepa a 1024 × 680. -->
             <GridPane styleClass="fila-campos" GridPane.columnIndex="1">
                 <columnConstraints>
-                    <ColumnConstraints percentWidth="50"/>
-                    <ColumnConstraints percentWidth="50"/>
+                    <ColumnConstraints percentWidth="56"/>
+                    <ColumnConstraints percentWidth="44"/>
                 </columnConstraints>
                 <VBox styleClass="campo" GridPane.columnIndex="0">
                     <Label text="Moneda" labelFor="$currency"/>

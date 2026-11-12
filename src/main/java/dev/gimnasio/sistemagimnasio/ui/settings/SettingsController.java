@@ -203,6 +203,11 @@ public final class SettingsController {
         return root;
     }
 
+    /** Un panel más debajo del formulario, por ejemplo el catálogo de métodos de pago. */
+    public void addPanel(Node panel) {
+        root.getChildren().add(root.getChildren().indexOf(barSpace), panel);
+    }
+
     private void buildSaveBar() {
         Label message = new Label("Tienes cambios sin guardar");
         message.getStyleClass().add("peso-600");
