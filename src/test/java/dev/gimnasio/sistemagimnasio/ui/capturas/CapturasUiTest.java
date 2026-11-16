@@ -237,11 +237,11 @@ class CapturasUiTest {
         FxHarness.resizeScene(stage, AppWindow.WIDTH, AppWindow.HEIGHT);
 
         // Tab recorre el menú, Cerrar sesión, el tema y los atajos, y vuelve al menú.
-        List<String> order = tabOrder(scene, 9);
+        List<String> order = tabOrder(scene, 10);
         System.out.println("[teclado] menú administrador, Tab: " + order);
-        // Después de los atajos, Tab entra al contenido: el tablero ya no es un aviso de sección pendiente.
+        // La búsqueda del encabezado es una parada; después de los atajos, Tab entra al contenido del tablero.
         assertEquals(List.of("nav-tablero", "nav-cobro", "nav-socios", "nav-planes", "nav-usuarios",
-                "nav-configuracion", "signOut", "tema-claro", "atajos", "tb-actualizar"), order);
+                "nav-configuracion", "signOut", "buscar-global", "tema-claro", "atajos", "tb-actualizar"), order);
 
         // Espacio sobre una sección la abre.
         FxHarness.runFx(() -> scene.lookup("#nav-usuarios").requestFocus());
@@ -1144,6 +1144,83 @@ class CapturasUiTest {
         clickInDialog(FxHarness.onFx(() -> dialogWithButton("Eliminar")), "Eliminar");
         FxHarness.waitUntil("eliminado", () -> scene.lookup("#pl-editar-" + visita) == null);
         assertEquals("Se eliminó el plan «Visita».", FxHarness.onFx(() -> toastText(scene, "aviso")));
+    }
+
+    private String typedSearch(Scene scene, String text) throws Exception {
+        FxHarness.runFx(() -> {
+            var field = (javafx.scene.control.TextField) scene.lookup("#buscar-global");
+            field.requestFocus();
+            field.setText(text);
+        });
+        return text;
+    }
+
+    @Test
+    void proyectoBusqueda() throws Exception {
+        UiFakes.Backend backend = gymForDashboard();
+        long daniel = memberId(backend, "Daniel Soto");
+        long karen = memberId(backend, "Karen Ortiz");
+        Scene scene = signIn(backend, "admin");
+        FxHarness.waitUntil("tablero", () -> onScreen(scene, "tb-actualizar"));
+        assertFalse(FxHarness.onFx(() -> onScreen(scene, "bg-panel")), "sin texto no hay panel");
+
+        // Muchos coinciden: se ven 7 y cuántos hay.
+        typedSearch(scene, "a");
+        FxHarness.waitUntil("resultados", () -> onScreen(scene, "bg-panel")
+                && ((javafx.scene.control.Label) scene.lookup("#bg-resumen")).getText().contains(" de "));
+        assertEquals(7L, FxHarness.onFx(() -> scene.lookup("#bg-panel").lookupAll(".elegible").stream().count()));
+        captureAll("proyecto-busqueda", "resultados");
+
+        // Teclado: ↓ entra a los resultados, ↑ desde el primero vuelve al campo, Esc cierra.
+        FxHarness.press(scene, KeyCode.DOWN, false);
+        String first = FxHarness.focusOwner(scene);
+        assertTrue(first.startsWith("bg-socio-"), first);
+        FxHarness.press(scene, KeyCode.DOWN, false);
+        assertTrue(FxHarness.focusOwner(scene).startsWith("bg-socio-") && !FxHarness.focusOwner(scene).equals(first));
+        FxHarness.press(scene, KeyCode.UP, false);
+        FxHarness.press(scene, KeyCode.UP, false);
+        assertEquals("buscar-global", FxHarness.focusOwner(scene));
+        FxHarness.press(scene, KeyCode.ESCAPE, false);
+        FxHarness.waitUntil("panel cerrado", () -> !onScreen(scene, "bg-panel"));
+        assertEquals("", text(scene, "buscar-global"));
+
+        // Sin coincidencias, lo dice.
+        typedSearch(scene, "zzz");
+        FxHarness.waitUntil("sin resultados", () -> onScreen(scene, "bg-mensaje")
+                && "Ningún socio coincide con «zzz».".equals(((javafx.scene.control.Label) scene.lookup("#bg-mensaje")).getText()));
+        captureAll("proyecto-busqueda", "sin-resultados");
+
+        // Elegir un socio abre su cobro, ya elegido.
+        typedSearch(scene, "soto");
+        FxHarness.waitUntil("Daniel", () -> onScreen(scene, "bg-socio-" + daniel));
+        FxHarness.press(scene, KeyCode.DOWN, false);
+        assertEquals("bg-socio-" + daniel, FxHarness.focusOwner(scene));
+        FxHarness.press(scene, KeyCode.SPACE, false);
+        FxHarness.waitUntil("cobro de Daniel", () -> onScreen(scene, "co-socio") && onScreen(scene, "co-planes"));
+        assertEquals("Cobrar membresía", title(scene));
+        assertTrue(FxHarness.onFx(() -> scene.lookup("#co-socio").lookupAll(".label").stream()
+                .anyMatch(n -> "Daniel Soto".equals(((javafx.scene.control.Label) n).getText()))));
+        assertFalse(FxHarness.onFx(() -> onScreen(scene, "bg-panel")), "elegir cierra el panel");
+
+        // Ya en Cobrar membresía, buscar a otro socio vuelve a abrir el cobro con él.
+        typedSearch(scene, "karen");
+        FxHarness.waitUntil("Karen", () -> onScreen(scene, "bg-socio-" + karen));
+        fire(scene, "bg-socio-" + karen);
+        FxHarness.waitUntil("cobro de Karen", () -> onScreen(scene, "co-socio") && scene.lookup("#co-socio")
+                .lookupAll(".label").stream().anyMatch(n -> "Karen Ortiz".equals(((javafx.scene.control.Label) n).getText())));
+        captureAll("proyecto-busqueda", "cobro-desde-busqueda");
+
+        // Enter abre Socios con lo escrito.
+        typedSearch(scene, "ruiz");
+        FxHarness.waitUntil("resultados", () -> onScreen(scene, "bg-panel") && !scene.lookup("#bg-panel")
+                .lookupAll(".elegible").isEmpty());
+        FxHarness.press(scene, KeyCode.ENTER, false);
+        FxHarness.waitUntil("Socios filtrado", () -> onScreen(scene, "so-tabla")
+                && "ruiz".equals(((javafx.scene.control.TextField) scene.lookup("#so-buscar")).getText()));
+        assertEquals("Socios", title(scene));
+        FxHarness.waitUntil("una coincidencia", () -> ((javafx.scene.control.Label) scene.lookup("#so-resumen"))
+                .getText().startsWith("Mostrando 1 de"));
+        assertEquals("", text(scene, "buscar-global"));
     }
 
     private void captureDialogIn(String folder, String name) throws Exception {

@@ -142,7 +142,29 @@ public final class GymDeskUi implements AutoCloseable {
         window.setGymName(info.gymName());
         shell = new ShellController(info, session.actor(), themes, this::signOut, this::screenFor);
         window.setContent(FxmlView.load("shell", shell));
+        installSearch();
     }
+
+    /** La búsqueda del encabezado: elegir un socio abre su cobro (o Socios, si quien busca no puede cobrar). */
+    private void installSearch() {
+        boolean canCharge = session.can(dev.gimnasio.sistemagimnasio.domain.user.Permission.CHARGE_MEMBERSHIP);
+        var model = new dev.gimnasio.sistemagimnasio.ui.members.QuickSearchViewModel(useCases, background,
+                session::actor);
+        var search = new dev.gimnasio.sistemagimnasio.ui.members.QuickSearchController(model,
+                canCharge ? this::chargeFor : member -> showInMembers(member.fullName()),
+                canCharge ? "Cobrar a" : "Ver a", this::showInMembers);
+        shell.setSearch(search.field(), search.panel());
+    }
+
+    /** Abre Socios con esa búsqueda ya escrita. */
+    private void showInMembers(String text) {
+        pendingMemberSearch = text;
+        shell.open(Route.SOCIOS);
+        pendingMemberSearch = null;
+    }
+
+    /** Lo que la búsqueda del encabezado pidió mostrar en Socios; lo toma la pantalla al crearse. */
+    private String pendingMemberSearch;
 
     /** El socio que el tablero pidió cobrar; lo toma la pantalla de cobro al crearse. */
     private dev.gimnasio.sistemagimnasio.application.usecase.members.MemberRow pendingCharge;
@@ -178,6 +200,9 @@ public final class GymDeskUi implements AutoCloseable {
                 notifier, session.can(dev.gimnasio.sistemagimnasio.domain.user.Permission.EDIT_MEMBERS),
                 () -> gymInfo.today());
         var controller = new dev.gimnasio.sistemagimnasio.ui.members.MembersController(model);
+        if (pendingMemberSearch != null) {
+            model.searchTextProperty().set(pendingMemberSearch);
+        }
         model.load();
         return Screen.of(controller.view());
     }
@@ -212,10 +237,10 @@ public final class GymDeskUi implements AutoCloseable {
         return Screen.of(controller.view());
     }
 
-    /** Abre Cobrar membresía con el socio ya elegido (desde el tablero). */
+    /** Abre Cobrar membresía con el socio ya elegido (desde el tablero o la búsqueda), aunque ya se esté ahí. */
     private void chargeFor(dev.gimnasio.sistemagimnasio.application.usecase.members.MemberRow member) {
         pendingCharge = member;
-        shell.navigate(Route.COBRO);
+        shell.open(Route.COBRO);
         pendingCharge = null;
     }
 
