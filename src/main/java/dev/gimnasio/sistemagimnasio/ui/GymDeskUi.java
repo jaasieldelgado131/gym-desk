@@ -177,6 +177,7 @@ public final class GymDeskUi implements AutoCloseable {
             case COBRO -> chargeScreen();
             case SOCIOS -> membersScreen();
             case PLANES -> plansScreen();
+            case USUARIOS -> usersScreen();
             default -> null;
         };
     }
@@ -215,6 +216,14 @@ public final class GymDeskUi implements AutoCloseable {
             model.chooseMember(pendingCharge);
             pendingCharge = null;
         }
+        model.load();
+        return Screen.of(controller.view());
+    }
+
+    private Screen usersScreen() {
+        var model = new dev.gimnasio.sistemagimnasio.ui.users.UsersViewModel(useCases, background, session::actor,
+                notifier);
+        var controller = new dev.gimnasio.sistemagimnasio.ui.users.UsersController(model);
         model.load();
         return Screen.of(controller.view());
     }

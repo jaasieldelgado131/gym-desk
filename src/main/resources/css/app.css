@@ -985,3 +985,10 @@
 .busqueda-mensaje { -fx-padding: 8 10 10 10; }
 .busqueda-lista, .busqueda-lista > .viewport { -fx-background-color: transparent; -fx-background-insets: 0; -fx-padding: 0; }
 .busqueda-pie { -fx-padding: 6 4 0 4; -fx-border-color: -gd-linea transparent transparent transparent; -fx-border-width: 1 0 0 0; }
+
+/* Usuarios: qué puede hacer cada rol */
+.matriz-permisos { -fx-padding: 0 20 16 20; -fx-hgap: 12; -fx-vgap: 10; }
+.matriz-cab { -fx-font-family: "Instrument Sans Medium"; -fx-font-size: 12.5px; -fx-text-fill: -gd-texto-2; }
+.matriz-permisos > .label { -fx-font-size: 13.5px; }
+.matriz-permisos .permiso-si .icono, .matriz-permisos .icono.permiso-si { -fx-stroke: -gd-ok; -fx-stroke-width: 2.4; }
+.matriz-permisos .permiso-no { -fx-text-fill: -gd-texto-3; }
