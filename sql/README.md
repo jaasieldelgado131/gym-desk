@@ -71,3 +71,13 @@ Los resultados esperados corresponden a `02_datos.sql`; las fechas de los datos 
 | P01 | Registrar el cobro de una membresía | Procedimiento `sp_registrar_cobro` | `05_procedimientos.sql` | Pago con el siguiente folio y su membresía; tipo de cobro según el estado; la misma operación no cobra dos veces |
 
 `06_pruebas.sql` ejecuta F01, F02, F03 y P01 con estos datos y muestra sus resultados.
+
+### Catálogos y módulos
+
+| ID | Requisito | Casos de uso | Pantalla | Pruebas | Estado |
+|---|---|---|---|---|---|
+| C01 | Catálogo de socios: registrar, consultar, modificar y eliminar | `application/usecase/members/` | Socios (`ui/members/`) | `MembersTest`, `PostgresMemberRepositoryTest`, `MembersViewModelTest`, capturas `proyecto-socios` | ✅ |
+| C02 | Catálogo de métodos de pago: registrar, consultar, modificar, activar y eliminar | `application/usecase/paymentmethods/` | Configuración › Métodos de pago (`ui/settings/`) | `PaymentMethodsTest`, `PaymentMethodsViewModelTest`, capturas `fase-2-entrega-2` | ✅ |
+| C03 | Catálogo de planes: registrar, consultar, modificar, activar y eliminar | `application/usecase/plans/` | Planes | `PlansTest`, `PostgresPlanRepositoryTest` | Falta la pantalla |
+| M01 | Módulo de cobro de membresías | `application/usecase/billing/`; P01 en la base | Cobrar membresía | `BillingTest`, `SqlScriptsTest` | Falta la pantalla |
+| M02 | Módulo de control de vigencias | F02 en la base | Tablero | `SqlScriptsTest` | Faltan el caso de uso y la pantalla |
