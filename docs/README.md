@@ -15,7 +15,11 @@ Arquitectura por capas (hexagonal): el dominio es Java puro y no depende de nada
 
 ## Modelo de datos
 
-Tablas, relaciones y reglas de la base: [modelo-de-datos.md](modelo-de-datos.md). El DBML de origen está en [modelo-de-datos.dbml](modelo-de-datos.dbml).
+Tablas, relaciones y reglas de la base: [modelo-de-datos.md](modelo-de-datos.md). El DBML de origen está en [modelo-de-datos.dbml](modelo-de-datos.dbml) y el diccionario de datos, en [diccionario-de-datos.md](diccionario-de-datos.md).
+
+## Scripts SQL del proyecto final
+
+La carpeta [`sql/`](../sql/README.md) reconstruye la base sin la aplicación: esquema, datos de prueba, consultas, funciones, procedimiento y pruebas, con su orden de ejecución y la matriz de evidencias. `sql/crear-base.sh` los corre en el PostgreSQL de `docker-compose.yml`.
 
 ## UI
 
